@@ -8,6 +8,7 @@ import {
   ListObjectsV2Command,
   S3Client,
 } from '@aws-sdk/client-s3'
+import * as bmp from '@vingle/bmp-js'
 import { encode } from 'blurhash'
 import consola from 'consola'
 import type { Exif } from 'exif-reader'
@@ -15,7 +16,6 @@ import exifReader from 'exif-reader'
 import getRecipe from 'fuji-recipes'
 import heicConvert from 'heic-convert'
 import sharp from 'sharp'
-import bmp from 'sharp-bmp'
 
 import { env } from '../env.js'
 
@@ -111,7 +111,11 @@ const SUPPORTED_FORMATS = new Set([
 const HEIC_FORMATS = new Set(['.heic', '.heif', '.hif'])
 
 // BMP 格式
-const BMP_FORMATS = new Set(['.bmp'])
+const BUF_BMP = Buffer.from([0x42, 0x4d])
+
+function isBitmap(buf: Buffer): boolean {
+  return Buffer.compare(BUF_BMP, buf.slice(0, 2)) === 0
+}
 
 // 定义类型
 interface PhotoInfo {
@@ -449,19 +453,6 @@ async function preprocessImageBuffer(
   if (HEIC_FORMATS.has(ext)) {
     log.info(`检测到 HEIC/HEIF 格式：${key}`)
     return await convertHeicToJpeg(buffer, log)
-  }
-
-  // 如果是 BMP 格式，使用 sharp-bmp 处理
-  if (BMP_FORMATS.has(ext)) {
-    console.info(`检测到 BMP 格式，正在转换: ${key}`)
-    const bmpBuffer = bmp.decode(buffer).data
-    if (!bmpBuffer) {
-      console.error(`BMP 转换失败: ${key}`)
-      throw new Error(`无法处理 BMP 格式: ${key}`)
-    }
-    const meta = await sharp(bmpBuffer).metadata()
-    console.info('meta:', meta)
-    return bmpBuffer
   }
 
   // 其他格式直接返回原始 buffer
@@ -926,8 +917,24 @@ async function buildManifest(): Promise<void> {
           return { item: null, type: 'failed' }
         }
 
-        // 创建 Sharp 实例，复用于多个操作
-        const sharpInstance = sharp(imageBuffer)
+        let sharpInstance: sharp.Sharp | null = null
+
+        // 如果是 BMP 格式
+        if (isBitmap(imageBuffer)) {
+          console.info(`检测到 BMP 格式，正在转换: ${key}`)
+          const bitmap = bmp.decode(imageBuffer, true)
+          sharpInstance = sharp(bitmap.data, {
+            raw: {
+              width: bitmap.width,
+              height: bitmap.height,
+              channels: 4,
+            },
+          }).jpeg()
+          imageBuffer = await sharpInstance.toBuffer()
+        } else {
+          // 创建 Sharp 实例，复用于多个操作
+          sharpInstance = sharp(imageBuffer)
+        }
 
         // 获取图片元数据（复用 Sharp 实例）
         const metadata = await getImageMetadataWithSharp(

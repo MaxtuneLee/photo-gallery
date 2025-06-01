@@ -33,6 +33,7 @@
     "@t3-oss/env-core": "0.13.6",
     "@tanstack/react-query": "5.79.0",
     "@use-gesture/react": "10.3.1",
+    "@vingle/bmp-js": "^0.2.5",
     "blurhash": "2.0.5",
     "clsx": "2.1.1",
     "consola": "3.4.2",
