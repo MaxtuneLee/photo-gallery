@@ -24,7 +24,7 @@ export const Component = () => {
         )}
         viewportClassName="size-full"
       >
-        <div className="p-4">
+        <div>
           <MasonryRoot />
         </div>
       </ScrollArea>

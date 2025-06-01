@@ -155,7 +155,7 @@ export function generateS3Url(key: string): string {
   // 如果设置了自定义域名，直接使用自定义域名
   if (env.S3_CUSTOM_DOMAIN) {
     const customDomain = env.S3_CUSTOM_DOMAIN.replace(/\/$/, '') // 移除末尾的斜杠
-    return `${customDomain}/${bucketName}/${key}`
+    return `${customDomain}/${key}`
   }
 
   // 如果使用自定义端点，构建相应的 URL
@@ -163,10 +163,10 @@ export function generateS3Url(key: string): string {
 
   // 检查是否是标准 AWS S3 端点
   if (endpoint.includes('amazonaws.com')) {
-    return `https://${bucketName}.s3.${env.S3_REGION}.amazonaws.com/${bucketName}/${key}`
+    return `https://${bucketName}.s3.${env.S3_REGION}.amazonaws.com/${key}`
   }
 
   // 对于自定义端点（如 MinIO 等）
   const baseUrl = endpoint.replace(/\/$/, '') // 移除末尾的斜杠
-  return `${baseUrl}/${bucketName}/${key}`
+  return `${baseUrl}/${key}`
 }

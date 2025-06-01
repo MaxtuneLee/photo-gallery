@@ -1,18 +1,17 @@
 export const siteConfig = {
-  name: "Innei's Photo Gallery",
-  title: "Innei's Photo Gallery",
-  description:
-    'Capturing beautiful moments in life, documenting daily warmth and emotions through my lens.',
-  url: process.env.SITE_URL || 'https://gallery.innei.in',
+  name: "Maxtune's Photo Gallery",
+  title: 'Maxtune Photography',
+  description: '人生路漫漫，白鹭常相伴',
+  url: 'https://gallery.mxte.cc',
   ogImage: {
     width: 1200,
     height: 630,
   },
   author: {
-    name: 'Photo Gallery',
-    url: process.env.SITE_URL || 'https://innei.in/',
+    name: 'Maxtune Photography',
+    url: 'https://mxte.cc/',
   },
   social: {
-    twitter: '@__oQuery',
+    twitter: '@MaxtuneLee',
   },
 }

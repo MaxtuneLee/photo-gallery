@@ -6,7 +6,9 @@ import sharp from 'sharp'
 
 import { extractExifData } from '../image/exif.js'
 import {
+  convertBmpToJpegSharpInstance,
   getImageMetadataWithSharp,
+  isBitmap,
   preprocessImageBuffer,
 } from '../image/processor.js'
 import {
@@ -113,9 +115,22 @@ export async function processPhoto(
       workerLoggers.image.error(`预处理图片失败：${key}`, error)
       return { item: null, type: 'failed' }
     }
-
     // 创建 Sharp 实例，复用于多个操作
-    const sharpInstance = sharp(imageBuffer)
+    let sharpInstance = sharp(imageBuffer)
+
+    // 处理 BMP
+    if (isBitmap(imageBuffer)) {
+      try {
+        sharpInstance = await convertBmpToJpegSharpInstance(
+          imageBuffer,
+          workerLoggers.image,
+        )
+        imageBuffer = await sharpInstance.toBuffer()
+      } catch (error) {
+        workerLoggers.image.error(`转换 BMP 失败：${key}`, error)
+        return { item: null, type: 'failed' }
+      }
+    }
 
     // 获取图片元数据（复用 Sharp 实例）
     const metadata = await getImageMetadataWithSharp(

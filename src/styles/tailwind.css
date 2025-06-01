@@ -11,9 +11,9 @@
   name: 'dark';
   prefersdark: true;
   color-scheme: dark;
-  --color-primary: #007aff;
-  --color-secondary: #007aff;
-  --color-accent: #007aff;
+  --color-primary: #f596aa;
+  --color-secondary: #fb966e;
+  --color-accent: rgb(255, 107, 1);
   --color-neutral: #48484a;
   --color-base-100: #1c1c1e;
   --color-base-content: #fff;

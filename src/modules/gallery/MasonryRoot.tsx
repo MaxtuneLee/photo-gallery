@@ -18,6 +18,7 @@ import { usePhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
 import { useTypeScriptHappyCallback } from '~/hooks/useTypeScriptCallback'
 import type { PhotoManifest } from '~/types/photo'
 
+import { siteConfig } from '../../../config/site.config'
 import { Masonry } from './Masonic'
 import { PhotoMasonryItem } from './PhotoMasonryItem'
 
@@ -59,8 +60,8 @@ export const MasonryRoot = () => {
           [photoViewer.openViewer, photos],
         )}
         columnWidth={300}
-        columnGutter={16}
-        rowGutter={16}
+        columnGutter={1}
+        rowGutter={1}
         itemHeightEstimate={400}
         itemKey={useTypeScriptHappyCallback((data, _index) => {
           if (data instanceof MasonryHeaderItem) {
@@ -140,29 +141,25 @@ export const MasonryItem = ({
         <MasonryHeaderMasonryItem width={width} />
       </m.div>
     )
-  } else {
-    return (
-      <m.div
-        key={itemKey}
-        variants={shouldAnimate ? itemVariants : undefined}
-        initial={shouldAnimate ? 'hidden' : 'visible'}
-        animate="visible"
-        layout
-        whileHover={{
-          scale: 1.02,
-          transition: { duration: 0.2 },
-        }}
-      >
-        <PhotoMasonryItem
-          data={data as PhotoManifest}
-          width={width}
-          index={index}
-          onPhotoClick={onPhotoClick}
-          photos={photos}
-        />
-      </m.div>
-    )
   }
+
+  return (
+    <m.div
+      key={itemKey}
+      variants={shouldAnimate ? itemVariants : undefined}
+      initial={shouldAnimate ? 'hidden' : 'visible'}
+      animate="visible"
+      layout
+    >
+      <PhotoMasonryItem
+        data={data as PhotoManifest}
+        width={width}
+        index={index}
+        onPhotoClick={onPhotoClick}
+        photos={photos}
+      />
+    </m.div>
+  )
 }
 
 const numberFormatter = new Intl.NumberFormat('zh-CN')
@@ -197,12 +194,12 @@ const MasonryHeaderMasonryItem = ({ width }: { width: number }) => {
 
   return (
     <div
-      className="border-border bg-material-medium w-full overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-xl"
+      className="border-border bg-material-medium w-full overflow-hidden border shadow-2xl backdrop-blur-xl"
       style={{ width }}
     >
       <div className="relative">
         {/* Decorative gradient bar */}
-        <div className="to-accent absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-blue-500" />
+        <div className="bg-accent absolute top-0 left-0 h-1 w-full" />
 
         {/* Decorative corner elements */}
         <div className="absolute -top-1 -left-1 block size-3 border-t-2 border-l-2 border-blue-500" />
@@ -212,32 +209,20 @@ const MasonryHeaderMasonryItem = ({ width }: { width: number }) => {
           {/* Main header section */}
           <div className="mb-4 flex items-center justify-between">
             <div className="flex shrink-0 items-center gap-4">
-              <div className="to-accent flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 shadow-lg">
-                <i className="i-mingcute-camera-2-line size-6 text-white" />
+              <div className="bg-accent flex size-12 items-center justify-center rounded-full shadow-lg">
+                <i>📸</i>
               </div>
               <div>
                 <p className="text-text-secondary mt-1 text-sm">
                   {numberFormatter.format(data?.length || 0)} 张照片
                 </p>
-                <p className="text-text-secondary text-sm">Innei's Gallery</p>
+                <p className="text-text-secondary text-sm">
+                  {siteConfig.title}
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                className="bg-fill hover:bg-fill-hover rounded-full p-2 transition-colors"
-                onClick={() =>
-                  window.open(
-                    'https://github.com/Innei/photo-gallery',
-                    '_blank',
-                  )
-                }
-                title="查看 GitHub 仓库"
-              >
-                <i className="i-mingcute-github-line size-4" />
-              </Button>
-
               {/* 标签筛选按钮 */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

@@ -33,6 +33,7 @@
     "@t3-oss/env-core": "0.13.6",
     "@tanstack/react-query": "5.79.0",
     "@use-gesture/react": "10.3.1",
+    "@vingle/bmp-js": "^0.2.5",
     "blurhash": "2.0.5",
     "clsx": "2.1.1",
     "consola": "3.4.2",
@@ -59,6 +60,7 @@
     "react-scan": "0.3.4",
     "react-zoom-pan-pinch": "3.7.0",
     "sharp": "0.34.2",
+    "sharp-bmp": "^0.1.5",
     "sonner": "2.0.4",
     "swiper": "11.2.8",
     "tailwind-merge": "3.3.0",
@@ -67,6 +69,7 @@
     "zustand": "5.0.5"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@egoist/tailwindcss-icons": "1.9.0",
     "@iconify-json/mingcute": "1.2.3",
     "@innei/prettier": "^0.15.0",
