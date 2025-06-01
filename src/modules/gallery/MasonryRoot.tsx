@@ -17,6 +17,7 @@ import { photoLoader } from '~/data/photos'
 import { usePhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
 import type { PhotoManifest } from '~/types/photo'
 
+import { siteConfig } from '../../../config/site.config'
 import { Masonry } from './Masonic'
 import { PhotoMasonryItem } from './PhotoMasonryItem'
 
@@ -218,7 +219,9 @@ const MasonryHeaderMasonryItem = ({ width }: { width: number }) => {
                 <p className="text-text-secondary mt-1 text-sm">
                   {numberFormatter.format(data?.length || 0)} 张照片
                 </p>
-                <p className="text-text-secondary text-sm">Innei's Gallery</p>
+                <p className="text-text-secondary text-sm">
+                  {siteConfig.title}
+                </p>
               </div>
             </div>
 
@@ -228,7 +231,7 @@ const MasonryHeaderMasonryItem = ({ width }: { width: number }) => {
                 className="bg-fill hover:bg-fill-hover rounded-full p-2 transition-colors"
                 onClick={() =>
                   window.open(
-                    'https://github.com/Innei/photo-gallery',
+                    'https://github.com/MaxtuneLee/photo-gallery',
                     '_blank',
                   )
                 }
