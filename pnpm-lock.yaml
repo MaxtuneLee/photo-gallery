@@ -122,6 +122,9 @@ importers:
       sharp:
         specifier: 0.34.2
         version: 0.34.2
+      sharp-bmp:
+        specifier: ^0.1.5
+        version: 0.1.5
       sonner:
         specifier: 2.0.4
         version: 2.0.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -2379,6 +2382,9 @@ packages:
   blurhash@2.0.5:
     resolution: {integrity: sha512-cRygWd7kGBQO3VEhPiTgq4Wc43ctsM+o46urrmPOiuAe+07fzlSB9OJVdpgDL0jPqXUVQ9ht7aq7kxOeJHRK+w==}
 
+  bmp-js@0.1.0:
+    resolution: {integrity: sha512-vHdS19CnY3hwiNdkaqk93DvjVLfbEcI8mys4UjuWrlX1haDmroo8o4xCzh4wD6DGV6HxRCyauwhHRqMTfERtjw==}
+
   bowser@2.11.0:
     resolution: {integrity: sha512-AlcaJBi/pqqJBIQ8U9Mcpc9i8Aqxn88Skv5d+xBX006BY5u8N3mGLHa5Lgppa7L/HfwgwLgZ6NYs+Ag6uUmJRA==}
 
@@ -4077,6 +4083,9 @@ packages:
   sh-syntax@0.4.2:
     resolution: {integrity: sha512-/l2UZ5fhGZLVZa16XQM9/Vq/hezGGbdHeVEA01uWjOL1+7Ek/gt6FquW0iKKws4a9AYPYvlz6RyVvjh3JxOteg==}
     engines: {node: '>=16.0.0'}
+
+  sharp-bmp@0.1.5:
+    resolution: {integrity: sha512-IpWAy+AeTlWNHiBU8HH4atcKbztgKOXTuT4W8aFaeASPCeJwCVpoUymWMfEmwfvWSCOV1s7VmGTlKhcPLkt+Lw==}
 
   sharp@0.34.2:
     resolution: {integrity: sha512-lszvBmB9QURERtyKT2bNmsgxXK0ShJrL/fvqlonCo7e6xBF8nT8xU6pW+PMIbLsz0RxQk3rgH9kd8UmvOzlMJg==}
@@ -7191,6 +7200,8 @@ snapshots:
 
   blurhash@2.0.5: {}
 
+  bmp-js@0.1.0: {}
+
   bowser@2.11.0: {}
 
   brace-expansion@1.1.11:
@@ -8906,6 +8917,11 @@ snapshots:
   sh-syntax@0.4.2:
     dependencies:
       tslib: 2.8.1
+
+  sharp-bmp@0.1.5:
+    dependencies:
+      bmp-js: 0.1.0
+      sharp: 0.34.2
 
   sharp@0.34.2:
     dependencies:

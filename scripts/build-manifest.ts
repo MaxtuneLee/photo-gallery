@@ -15,6 +15,7 @@ import exifReader from 'exif-reader'
 import getRecipe from 'fuji-recipes'
 import heicConvert from 'heic-convert'
 import sharp from 'sharp'
+import bmp from 'sharp-bmp'
 
 import { env } from '../env.js'
 
@@ -108,6 +109,9 @@ const SUPPORTED_FORMATS = new Set([
 
 // HEIC/HEIF 格式
 const HEIC_FORMATS = new Set(['.heic', '.heif', '.hif'])
+
+// BMP 格式
+const BMP_FORMATS = new Set(['.bmp'])
 
 // 定义类型
 interface PhotoInfo {
@@ -447,6 +451,19 @@ async function preprocessImageBuffer(
     return await convertHeicToJpeg(buffer, log)
   }
 
+  // 如果是 BMP 格式，使用 sharp-bmp 处理
+  if (BMP_FORMATS.has(ext)) {
+    console.info(`检测到 BMP 格式，正在转换: ${key}`)
+    const bmpBuffer = bmp.decode(buffer).data
+    if (!bmpBuffer) {
+      console.error(`BMP 转换失败: ${key}`)
+      throw new Error(`无法处理 BMP 格式: ${key}`)
+    }
+    const meta = await sharp(bmpBuffer).metadata()
+    console.info('meta:', meta)
+    return bmpBuffer
+  }
+
   // 其他格式直接返回原始 buffer
   return buffer
 }
@@ -765,7 +782,7 @@ function generateS3Url(key: string): string {
   // 如果设置了自定义域名，直接使用自定义域名
   if (env.S3_CUSTOM_DOMAIN) {
     const customDomain = env.S3_CUSTOM_DOMAIN.replace(/\/$/, '') // 移除末尾的斜杠
-    return `${customDomain}/${bucketName}/${key}`
+    return `${customDomain}/${key}`
   }
 
   // 如果使用自定义端点，构建相应的 URL
@@ -778,7 +795,7 @@ function generateS3Url(key: string): string {
 
   // 对于自定义端点（如 MinIO 等）
   const baseUrl = endpoint.replace(/\/$/, '') // 移除末尾的斜杠
-  return `${baseUrl}/${bucketName}/${key}`
+  return `${baseUrl}/${key}`
 }
 
 // 主函数
