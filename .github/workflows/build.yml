@@ -105,4 +105,4 @@ jobs:
               docker rmi max/maxtune-gallery
             fi
             docker load -i maxtune-gallery.tar
-            docker run --restart always -d --name maxtune-gallery -p 4321:8080 max/maxtune-gallery
+            docker run --restart always -d --name maxtune-gallery -p 8081:8081 max/maxtune-gallery
