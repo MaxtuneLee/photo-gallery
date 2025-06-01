@@ -226,20 +226,6 @@ const MasonryHeaderMasonryItem = ({ width }: { width: number }) => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                className="bg-fill hover:bg-fill-hover rounded-full p-2 transition-colors"
-                onClick={() =>
-                  window.open(
-                    'https://github.com/MaxtuneLee/photo-gallery',
-                    '_blank',
-                  )
-                }
-                title="查看 GitHub 仓库"
-              >
-                <i className="i-mingcute-github-line size-4" />
-              </Button>
-
               {/* 标签筛选按钮 */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
