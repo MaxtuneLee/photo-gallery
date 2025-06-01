@@ -26,6 +26,9 @@
       ],
       "@pkg": [
         "./package.json"
+      ],
+      "@config": [
+        "./config/site.config.ts"
       ]
     },
   },

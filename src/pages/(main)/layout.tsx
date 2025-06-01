@@ -1,3 +1,4 @@
+import { siteConfig } from '@config'
 import clsx from 'clsx'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useEffect, useRef } from 'react'
@@ -17,16 +18,27 @@ export const Component = () => {
 
   return (
     <>
+      {siteConfig.accentColor && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+          :root:has(input.theme-controller[value=dark]:checked), [data-theme="dark"] {
+            --color-primary: ${siteConfig.accentColor};
+            --color-accent: ${siteConfig.accentColor};
+            --color-secondary: ${siteConfig.accentColor};
+          }
+          `,
+          }}
+        />
+      )}
       <ScrollArea
         rootClassName={clsx(
           'h-screen w-full transition-opacity duration-300',
-          isOpen ? 'pointer-events-none opacity-0' : 'opacity-100',
+          isOpen ? 'pointer-events-none opacity-0 delay-300' : 'opacity-100',
         )}
         viewportClassName="size-full"
       >
-        <div>
-          <MasonryRoot />
-        </div>
+        <MasonryRoot />
       </ScrollArea>
       <Outlet />
     </>

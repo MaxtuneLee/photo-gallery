@@ -119,8 +119,10 @@ const DropdownMenuCheckboxItem = ({
   className,
   children,
   checked,
+  icon,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem> & {
+  icon?: React.ReactNode
   ref?: React.Ref<React.ElementRef<
     typeof DropdownMenuPrimitive.CheckboxItem
   > | null>
@@ -135,6 +137,11 @@ const DropdownMenuCheckboxItem = ({
     checked={checked}
     {...props}
   >
+    {!!icon && (
+      <span className="mr-1.5 inline-flex size-4 items-center justify-center">
+        {icon}
+      </span>
+    )}
     {children}
     <span className="ml-auto flex size-3.5 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator className="ml-1 flex items-center justify-center">
@@ -159,7 +166,7 @@ const DropdownMenuLabel = ({
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={clsxm(
-      'text-text px-2 text-sm font-semibold',
+      'text-text px-2 py-1 text-sm font-semibold',
       inset && 'pl-8',
       className,
     )}

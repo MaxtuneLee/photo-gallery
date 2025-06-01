@@ -19,6 +19,8 @@ export default defineConfig(
       'unicorn/prefer-math-trunc': 'off',
       'unicorn/no-static-only-class': 'off',
       '@eslint-react/no-clone-element': 0,
+      // TailwindCSS v4 not support
+      'tailwindcss/no-custom-classname': 0,
       '@eslint-react/hooks-extra/no-direct-set-state-in-use-effect': 0,
       // NOTE: Disable this temporarily
       'react-compiler/react-compiler': 0,

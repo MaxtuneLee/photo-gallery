@@ -16,6 +16,7 @@
     "extract:font": "tsx scripts/extract-font-glyphs.ts",
     "format": "prettier --write \"src/**/*.ts\" ",
     "lint": "eslint --fix",
+    "preinstall": "[ -f config.json ] || cp config.example.json config.json",
     "prepare": "simple-git-hooks",
     "serve": "vite preview",
     "test:svg-font": "tsx scripts/test-svg-text.ts"
