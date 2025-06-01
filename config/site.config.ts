@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: "Maxtune's Photo Gallery",
-  title: "Maxtune's Photo Gallery",
+  title: 'Maxtune Photography',
   description: '人生路漫漫，白鹭常相伴',
   url: process.env.SITE_URL || 'https://gallery.mxte.cc',
   ogImage: {
