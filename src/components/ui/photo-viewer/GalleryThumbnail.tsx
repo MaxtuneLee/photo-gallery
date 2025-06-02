@@ -52,8 +52,10 @@ export const GalleryThumbnail: FC<{
       // 阻止默认的垂直滚动
       e.preventDefault()
 
-      // 将垂直滚动转换为横向滚动
-      const scrollAmount = e.deltaY
+      // 优先使用触控板的横向滚动 (deltaX)
+      // 如果没有横向滚动，则将垂直滚动 (deltaY) 转换为横向滚动
+      const scrollAmount =
+        Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
       scrollContainer.scrollLeft += scrollAmount
     }
 

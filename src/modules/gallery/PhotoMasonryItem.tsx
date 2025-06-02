@@ -103,7 +103,7 @@ export const PhotoMasonryItem = ({
 
   return (
     <m.div
-      className="bg-fill-quaternary group relative w-full cursor-pointer overflow-hidden"
+      className="bg-fill-quaternary group relative w-full cursor-pointer overflow-hidden rounded lg:rounded-none"
       style={{
         width,
         height: calculatedHeight,

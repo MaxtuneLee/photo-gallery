@@ -1366,9 +1366,11 @@ export const WebGLImageViewer = ({
   onZoomChange,
   onImageCopied,
   debug = false,
-}: WebGLImageViewerProps & {
-  ref?: React.RefObject<WebGLImageViewerRef | null>
-}) => {
+  ...divProps
+}: WebGLImageViewerProps &
+  Omit<React.HTMLAttributes<HTMLDivElement>, 'className'> & {
+    ref?: React.RefObject<WebGLImageViewerRef | null>
+  }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewerRef = useRef<WebGLImageViewerEngine | null>(null)
 
@@ -1451,7 +1453,15 @@ export const WebGLImageViewer = ({
   }, [src, config, debug])
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div
+      {...divProps}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        ...divProps.style,
+      }}
+    >
       <canvas
         ref={canvasRef}
         className={className}

@@ -39,34 +39,36 @@ export const MasonryRoot = () => {
   const photoViewer = usePhotoViewer()
 
   return (
-    <Masonry<MasonryItemType>
-      key={`${sortOrder}-${selectedTags.join(',')}`}
-      items={useMemo(() => [MasonryHeaderItem.default, ...photos], [photos])}
-      render={useCallback(
-        (props) => (
-          <MasonryItem
-            {...props}
-            onPhotoClick={photoViewer.openViewer}
-            photos={photos}
-            hasAnimated={hasAnimatedRef.current}
-            onAnimationComplete={() => {
-              hasAnimatedRef.current = true
-            }}
-          />
-        ),
-        [photoViewer.openViewer, photos],
-      )}
-      columnWidth={300}
-      columnGutter={4}
-      rowGutter={4}
-      itemHeightEstimate={400}
-      itemKey={useTypeScriptHappyCallback((data, _index) => {
-        if (data instanceof MasonryHeaderItem) {
-          return 'header'
-        }
-        return (data as PhotoManifest).id
-      }, [])}
-    />
+    <div className="p-1 lg:p-0">
+      <Masonry<MasonryItemType>
+        key={`${sortOrder}-${selectedTags.join(',')}`}
+        items={useMemo(() => [MasonryHeaderItem.default, ...photos], [photos])}
+        render={useCallback(
+          (props) => (
+            <MasonryItem
+              {...props}
+              onPhotoClick={photoViewer.openViewer}
+              photos={photos}
+              hasAnimated={hasAnimatedRef.current}
+              onAnimationComplete={() => {
+                hasAnimatedRef.current = true
+              }}
+            />
+          ),
+          [photoViewer.openViewer, photos],
+        )}
+        columnWidth={300}
+        columnGutter={4}
+        rowGutter={4}
+        itemHeightEstimate={400}
+        itemKey={useTypeScriptHappyCallback((data, _index) => {
+          if (data instanceof MasonryHeaderItem) {
+            return 'header'
+          }
+          return (data as PhotoManifest).id
+        }, [])}
+      />
+    </div>
   )
 }
 
@@ -189,7 +191,7 @@ const MasonryHeaderMasonryItem = ({ width }: { width: number }) => {
 
   return (
     <div
-      className="overflow-hidden border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+      className="overflow-hidden rounded border border-gray-200 bg-white shadow-sm lg:rounded-none dark:border-gray-800 dark:bg-gray-900"
       style={{ width }}
     >
       {/* Header section with clean typography */}

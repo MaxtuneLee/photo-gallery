@@ -5,12 +5,14 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { codeInspectorPlugin } from 'code-inspector-plugin'
 import { defineConfig } from 'vite'
+import { analyzer } from 'vite-bundle-analyzer'
 import { checker } from 'vite-plugin-checker'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 import { siteConfig } from './config/site.config'
 import PKG from './package.json'
 import { ogImagePlugin } from './plugins/og-image-plugin'
+import { createDependencyChunksPlugin } from './plugins/vite/deps'
 
 if (process.env.CI) {
   rmSync(path.join(process.cwd(), 'src/pages/(debug)'), {
@@ -31,6 +33,7 @@ export default defineConfig({
         plugins: [['babel-plugin-react-compiler', ReactCompilerConfig]],
       },
     }),
+
     tsconfigPaths(),
     checker({
       typescript: true,
@@ -40,6 +43,7 @@ export default defineConfig({
       bundler: 'vite',
       hotKeys: ['altKey'],
     }),
+    createDependencyChunksPlugin([['heic-to'], ['react', 'react-dom']]),
     tailwindcss(),
     ogImagePlugin({
       title: siteConfig.title,
@@ -47,6 +51,7 @@ export default defineConfig({
       siteName: siteConfig.name,
       siteUrl: siteConfig.url,
     }),
+    process.env.analyzer && analyzer(),
   ],
   define: {
     APP_DEV_CWD: JSON.stringify(process.cwd()),

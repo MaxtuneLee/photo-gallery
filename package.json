@@ -8,6 +8,7 @@
     "url": "https://github.com/innei/photo-gallery-site"
   },
   "scripts": {
+    "analyze": "analyzer=1 vite build",
     "build": "vite build",
     "build:manifest": "tsx src/core/cli.ts",
     "build:og": "tsx scripts/generate-og-image.ts",
@@ -103,6 +104,7 @@
     "tsx": "4.19.4",
     "typescript": "5.8.3",
     "vite": "6.3.5",
+    "vite-bundle-analyzer": "0.22.0",
     "vite-plugin-babel": "1.3.1",
     "vite-plugin-checker": "0.9.3",
     "vite-tsconfig-paths": "5.1.4"

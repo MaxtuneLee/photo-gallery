@@ -270,13 +270,50 @@ function convertVideoWithWebCodecs(
   })
 }
 
+// 检测浏览器是否原生支持 MOV 格式
+function isBrowserSupportMov(): boolean {
+  // 创建一个临时的 video 元素来测试格式支持
+  const video = document.createElement('video')
+
+  // 检测是否支持 MOV 容器格式
+  const canPlayMov = video.canPlayType('video/quicktime')
+
+  // 检测 User Agent 来识别 Safari
+  const isSafari =
+    /(?:^|[^a-z])safari(?:[^a-z]|$)/i.test(navigator.userAgent) &&
+    !/chrome|android/i.test(navigator.userAgent)
+
+  // Safari 通常原生支持 MOV
+  if (isSafari) {
+    return true
+  }
+
+  // 对于其他浏览器，只有当 canPlayType 明确返回支持时才认为支持
+  // 'probably' 或 'maybe' 表示支持，空字符串表示不支持
+  return canPlayMov === 'probably' || canPlayMov === 'maybe'
+}
+
 // 检测是否需要转换 mov 文件
 export function needsVideoConversion(url: string): boolean {
   const lowerUrl = url.toLowerCase()
-  return lowerUrl.includes('.mov') || lowerUrl.endsWith('.mov')
+  const isMovFile = lowerUrl.includes('.mov') || lowerUrl.endsWith('.mov')
+
+  // 如果不是 MOV 文件，不需要转换
+  if (!isMovFile) {
+    return false
+  }
+
+  // 如果浏览器原生支持 MOV，不需要转换
+  if (isBrowserSupportMov()) {
+    console.info('Browser natively supports MOV format, skipping conversion')
+    return false
+  }
+
+  // 浏览器不支持 MOV，需要转换
+  console.info('Browser does not support MOV format, conversion needed')
+  return true
 }
 
-// 主转换函数：优先使用 WebCodecs，降级到 FFmpeg
 export async function convertMovToMp4(
   videoUrl: string,
   onProgress?: (progress: ConversionProgress) => void,
