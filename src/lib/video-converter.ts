@@ -1,3 +1,6 @@
+import { isSafari } from './device-viewport'
+import { LRUCache } from './lru-cache'
+
 interface ConversionProgress {
   isConverting: boolean
   progress: number
@@ -10,6 +13,52 @@ interface ConversionResult {
   error?: string
   convertedSize?: number
   method?: 'webcodecs'
+}
+
+// Global video cache instance using the generic LRU cache with custom cleanup
+const videoCache: LRUCache<string, ConversionResult> = new LRUCache<
+  string,
+  ConversionResult
+>(10, (value, key, reason) => {
+  if (value.videoUrl) {
+    try {
+      URL.revokeObjectURL(value.videoUrl)
+      console.info(`Video cache: Revoked blob URL - ${reason}`)
+    } catch (error) {
+      console.warn(`Failed to revoke video blob URL (${reason}):`, error)
+    }
+  }
+})
+
+// Export cache management functions
+export function getVideoCacheSize(): number {
+  return videoCache.size()
+}
+
+export function clearVideoCache(): void {
+  videoCache.clear()
+}
+
+export function getCachedVideo(url: string): ConversionResult | undefined {
+  return videoCache.get(url)
+}
+
+/**
+ * Remove a specific video from cache and clean up its blob URL
+ */
+export function removeCachedVideo(url: string): boolean {
+  return videoCache.delete(url)
+}
+
+/**
+ * Get detailed cache statistics for debugging
+ */
+export function getVideoCacheStats(): {
+  size: number
+  maxSize: number
+  keys: string[]
+} {
+  return videoCache.getStats()
 }
 
 // 检查 WebCodecs 支持
@@ -67,8 +116,8 @@ function convertVideoWithWebCodecs(
 
         const { videoWidth, videoHeight, duration } = video
 
-        // 对于 Live Photo，通常持续时间很短，使用较低的帧率
-        const frameRate = duration <= 3 ? 15 : 30
+        // 保持高帧率以确保流畅度和质量
+        const frameRate = 30
         const totalFrames = Math.ceil(duration * frameRate)
 
         onProgress?.({
@@ -77,7 +126,7 @@ function convertVideoWithWebCodecs(
           message: '正在检测编码器支持...',
         })
 
-        // 简化编码器配置，优先使用更兼容的选项
+        // 高质量编码器配置，按兼容性优先排序
         const codecConfigs: Array<{
           name: string
           config: VideoEncoderConfig
@@ -85,10 +134,32 @@ function convertVideoWithWebCodecs(
           {
             name: 'H.264 Baseline',
             config: {
-              codec: 'avc1.42E01E', // H.264 Baseline Profile
+              codec: 'avc1.42E01E', // H.264 Baseline Profile - 最兼容
               width: videoWidth,
               height: videoHeight,
-              bitrate: Math.min(videoWidth * videoHeight * 0.2, 2000000),
+              bitrate: Math.min(videoWidth * videoHeight * 1.5, 15000000), // 提高到 1.5 倍率，最大 15Mbps
+              framerate: frameRate,
+              avc: { format: 'avc' as const },
+            },
+          },
+          {
+            name: 'H.264 Main Profile',
+            config: {
+              codec: 'avc1.4D4029', // H.264 Main Profile Level 4.1
+              width: videoWidth,
+              height: videoHeight,
+              bitrate: Math.min(videoWidth * videoHeight * 1.8, 18000000), // 1.8 倍率，最大 18Mbps
+              framerate: frameRate,
+              avc: { format: 'avc' as const },
+            },
+          },
+          {
+            name: 'H.264 High Profile',
+            config: {
+              codec: 'avc1.64002A', // H.264 High Profile Level 4.2
+              width: videoWidth,
+              height: videoHeight,
+              bitrate: Math.min(videoWidth * videoHeight * 2, 20000000), // 大幅提高到 2.0 倍率，最大 20Mbps
               framerate: frameRate,
               avc: { format: 'avc' as const },
             },
@@ -99,7 +170,17 @@ function convertVideoWithWebCodecs(
               codec: 'vp8',
               width: videoWidth,
               height: videoHeight,
-              bitrate: Math.min(videoWidth * videoHeight * 0.15, 1500000),
+              bitrate: Math.min(videoWidth * videoHeight * 1, 20000000), // 提高到 1.0 倍率，最大 10Mbps
+              framerate: frameRate,
+            },
+          },
+          {
+            name: 'VP9',
+            config: {
+              codec: 'vp09.00.10.08', // VP9 Profile 0
+              width: videoWidth,
+              height: videoHeight,
+              bitrate: Math.min(videoWidth * videoHeight * 1.2, 12000000), // VP9 效率更高，1.2 倍率，最大 12Mbps
               framerate: frameRate,
             },
           },
@@ -108,23 +189,82 @@ function convertVideoWithWebCodecs(
         let selectedConfig: VideoEncoderConfig | null = null
         let selectedCodecName = ''
 
-        // 测试编码器支持
+        // 测试编码器支持，同时检查 VideoEncoder 和 MediaRecorder 支持
         for (const { name, config } of codecConfigs) {
           try {
+            // 首先检查 VideoEncoder 支持
             const support = await VideoEncoder.isConfigSupported(config)
-            if (support.supported) {
-              selectedConfig = config
-              selectedCodecName = name
-              console.info(`WebCodecs: Using ${name} encoder`)
-              break
+            if (!support.supported) {
+              console.warn(`WebCodecs: ${name} VideoEncoder not supported`)
+              continue
             }
+
+            // 然后检查对应的 MediaRecorder 支持
+            let mimeType: string
+            if (config.codec.startsWith('vp09')) {
+              mimeType = 'video/webm; codecs="vp09.00.10.08"'
+            } else if (config.codec.startsWith('vp8')) {
+              mimeType = 'video/webm; codecs="vp8"'
+            } else if (config.codec.includes('64002A')) {
+              mimeType = 'video/mp4; codecs="avc1.64002A"' // High Profile
+            } else if (config.codec.includes('4D4029')) {
+              mimeType = 'video/mp4; codecs="avc1.4D4029"' // Main Profile
+            } else {
+              mimeType = 'video/mp4; codecs="avc1.42E01E"' // Baseline
+            }
+
+            // 检查 MediaRecorder 是否支持这个 MIME 类型
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+              console.warn(
+                `WebCodecs: ${name} MediaRecorder not supported (${mimeType})`,
+              )
+              continue
+            }
+
+            // 两者都支持，选择此编码器
+            selectedConfig = config
+            selectedCodecName = name
+            console.info(`WebCodecs: Using ${name} encoder (${mimeType})`)
+            break
           } catch (error) {
             console.warn(`WebCodecs: Failed to check ${name} support:`, error)
           }
         }
 
         if (!selectedConfig) {
-          throw new Error('没有找到支持的视频编码器')
+          // 如果没有找到支持的编码器，列出所有尝试过的编码器
+          const attemptedCodecs = codecConfigs.map(({ name, config }) => ({
+            name,
+            codec: config.codec,
+          }))
+          console.error(
+            'No supported video encoder found. Attempted codecs:',
+            attemptedCodecs,
+          )
+
+          // 尝试最基本的配置作为最后的回退
+          try {
+            const fallbackMimeType = 'video/webm'
+            if (MediaRecorder.isTypeSupported(fallbackMimeType)) {
+              console.info('Attempting fallback with basic webm format')
+              selectedConfig = {
+                codec: 'vp8', // 基础配置
+                width: videoWidth,
+                height: videoHeight,
+                bitrate: Math.min(videoWidth * videoHeight * 0.8, 8000000),
+                framerate: frameRate,
+              }
+              selectedCodecName = 'VP8 Fallback'
+            }
+          } catch (fallbackError) {
+            console.error('Fallback codec also failed:', fallbackError)
+          }
+
+          if (!selectedConfig) {
+            throw new Error(
+              '没有找到任何支持的视频编码器，浏览器可能不支持视频转换',
+            )
+          }
         }
 
         onProgress?.({
@@ -139,12 +279,43 @@ function convertVideoWithWebCodecs(
         canvas.width = videoWidth
         canvas.height = videoHeight
 
-        // 使用 canvas stream 和 MediaRecorder
+        // 设置高质量绘制参数
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
+
+        // 添加比特率信息日志
+        console.info('Selected encoder:', selectedCodecName)
+        console.info('Bitrate:', selectedConfig.bitrate, 'bps')
+        console.info(
+          'Bitrate (Mbps):',
+          ((selectedConfig.bitrate || 0) / 1000000).toFixed(2),
+        )
+
+        // 使用 canvas stream 和 MediaRecorder，高质量录制
         const stream = canvas.captureStream(frameRate)
+
+        // 根据选择的编码器设置对应的 MIME 类型（已在上面验证过支持）
+        let mimeType: string
+        if (selectedConfig.codec.startsWith('vp09')) {
+          mimeType = 'video/webm; codecs="vp09.00.10.08"'
+        } else if (selectedConfig.codec.startsWith('vp8')) {
+          mimeType =
+            selectedCodecName === 'VP8 Fallback'
+              ? 'video/webm'
+              : 'video/webm; codecs="vp8"'
+        } else if (selectedConfig.codec.includes('64002A')) {
+          mimeType = 'video/mp4; codecs="avc1.64002A"' // High Profile
+        } else if (selectedConfig.codec.includes('4D4029')) {
+          mimeType = 'video/mp4; codecs="avc1.4D4029"' // Main Profile
+        } else {
+          mimeType = 'video/mp4; codecs="avc1.42E01E"' // Baseline
+        }
+
+        console.info('Using MediaRecorder with mimeType:', mimeType)
+
         const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: selectedConfig.codec.startsWith('vp')
-            ? 'video/webm; codecs="vp8"'
-            : 'video/mp4; codecs="avc1.42E01E"',
+          mimeType,
+          videoBitsPerSecond: selectedConfig.bitrate, // 使用与编码器相同的比特率
         })
 
         const recordedChunks: Blob[] = []
@@ -224,7 +395,7 @@ function convertVideoWithWebCodecs(
 
           video.currentTime = timestamp
 
-          // 等待视频定位到正确时间
+          // 等待视频定位到正确时间，增加精度
           await new Promise<void>((frameResolve) => {
             const onSeeked = () => {
               video.removeEventListener('seeked', onSeeked)
@@ -232,14 +403,17 @@ function convertVideoWithWebCodecs(
             }
             video.addEventListener('seeked', onSeeked)
 
-            // 添加超时保护
+            // 添加超时保护，缩短等待时间以提高精度
             setTimeout(() => {
               video.removeEventListener('seeked', onSeeked)
               frameResolve()
-            }, 100)
+            }, 50) // 减少等待时间从 100ms 到 50ms
           })
 
-          // 绘制当前帧到 canvas
+          // 确保视频已准备好再绘制
+          await new Promise((resolve) => requestAnimationFrame(resolve))
+
+          // 绘制当前帧到 canvas，使用高质量设置
           ctx.drawImage(video, 0, 0, videoWidth, videoHeight)
           frameCount++
 
@@ -251,8 +425,11 @@ function convertVideoWithWebCodecs(
             message: `正在转换视频帧... ${frameCount}/${totalFrames}`,
           })
 
-          // 处理下一帧 (稍微延迟以确保帧被捕获)
-          setTimeout(() => processFrame(frameIndex + 1), 1000 / frameRate)
+          // 处理下一帧，减少延迟以确保精确时间控制
+          setTimeout(
+            () => processFrame(frameIndex + 1),
+            Math.max(1000 / frameRate / 2, 16),
+          ) // 最小 16ms 间隔
         }
 
         // 开始处理第一帧
@@ -277,11 +454,6 @@ function isBrowserSupportMov(): boolean {
 
   // 检测是否支持 MOV 容器格式
   const canPlayMov = video.canPlayType('video/quicktime')
-
-  // 检测 User Agent 来识别 Safari
-  const isSafari =
-    /(?:^|[^a-z])safari(?:[^a-z]|$)/i.test(navigator.userAgent) &&
-    !/chrome|android/i.test(navigator.userAgent)
 
   // Safari 通常原生支持 MOV
   if (isSafari) {
@@ -317,31 +489,57 @@ export function needsVideoConversion(url: string): boolean {
 export async function convertMovToMp4(
   videoUrl: string,
   onProgress?: (progress: ConversionProgress) => void,
+  forceReconvert = false, // 添加强制重新转换参数
 ): Promise<ConversionResult> {
+  // Check cache first, unless forced to reconvert
+  if (!forceReconvert) {
+    const cachedResult = videoCache.get(videoUrl)
+    if (cachedResult) {
+      console.info('Using cached video conversion result')
+      onProgress?.({
+        isConverting: false,
+        progress: 100,
+        message: '使用缓存结果',
+      })
+      return cachedResult
+    }
+  } else {
+    console.info('Force reconversion: clearing cached result for', videoUrl)
+    videoCache.delete(videoUrl)
+  }
+
   // 优先尝试 WebCodecs
   if (isWebCodecsSupported()) {
-    console.info('Using WebCodecs for video conversion...')
+    console.info('Using WebCodecs for HIGH QUALITY video conversion...')
     onProgress?.({
       isConverting: true,
       progress: 0,
-      message: '使用 WebCodecs 转换器...',
+      message: '使用高质量 WebCodecs 转换器...',
     })
 
     const result = await convertVideoWithWebCodecs(videoUrl, onProgress)
 
+    // Cache the result if successful
     if (result.success) {
-      console.info('WebCodecs conversion completed successfully')
-      return result
+      videoCache.set(videoUrl, result)
+      console.info('WebCodecs conversion completed successfully and cached')
     } else {
       console.warn(
         'WebCodecs conversion failed, falling back to FFmpeg:',
         result.error,
       )
     }
+
+    return result
   }
 
-  return {
+  const fallbackResult = {
     success: false,
     error: '浏览器不支持 webcodecs，Live Photo 转换失败',
   }
+
+  // Cache failed result to avoid repeated attempts
+  videoCache.set(videoUrl, fallbackResult)
+
+  return fallbackResult
 }

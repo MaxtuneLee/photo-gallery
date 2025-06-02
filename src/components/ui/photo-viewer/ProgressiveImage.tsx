@@ -1,7 +1,15 @@
 import { m, useAnimationControls } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
+import {
+  MenuItemSeparator,
+  MenuItemText,
+  useShowContextMenu,
+} from '~/atoms/context-menu'
 import { clsxm } from '~/lib/cn'
+import { isMobileDevice } from '~/lib/device-viewport'
+import { canUseWebGL } from '~/lib/feature'
 import { ImageLoaderManager } from '~/lib/image-loader-manager'
 import { Spring } from '~/lib/spring'
 import { isWebCodecsSupported } from '~/lib/video-converter'
@@ -10,23 +18,6 @@ import type { WebGLImageViewerRef } from '../WebGLImageViewer'
 import { WebGLImageViewer } from '../WebGLImageViewer'
 import type { LoadingIndicatorRef } from './LoadingIndicator'
 import { LoadingIndicator } from './LoadingIndicator'
-
-const canUseWebGL = (() => {
-  const canvas = document.createElement('canvas')
-  const gl = canvas.getContext('webgl')
-  return gl !== null
-})()
-
-const isMobileDevice = (() => {
-  if (typeof window === 'undefined') return false
-  return (
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent,
-    ) ||
-    // 现代检测方式：支持触摸且屏幕较小
-    ('ontouchstart' in window && window.screen.width < 1024)
-  )
-})()
 
 interface ProgressiveImageProps {
   src: string
@@ -94,43 +85,6 @@ export const ProgressiveImage = ({
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
   const [isLongPressing, setIsLongPressing] = useState(false)
 
-  // Reset states when image changes
-  useEffect(() => {
-    setHighResLoaded(false)
-    setBlobSrc(null)
-    setError(false)
-    setIsPlayingLivePhoto(false)
-    setLivePhotoVideoLoaded(false)
-
-    setIsConvertingVideo(false)
-    setConversionMethod('')
-    setIsLongPressing(false)
-
-    // Reset loading indicator
-    loadingIndicatorRef.current?.resetLoadingState()
-
-    // Clean up previous image loader manager
-    if (imageLoaderManagerRef.current) {
-      imageLoaderManagerRef.current.cleanup()
-      imageLoaderManagerRef.current = null
-    }
-
-    // Clean up timers
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current)
-      hoverTimerRef.current = null
-    }
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current)
-      longPressTimerRef.current = null
-    }
-
-    // Reset transform when image changes
-    if (transformRef.current) {
-      transformRef.current.resetView()
-    }
-  }, [src])
-
   useEffect(() => {
     if (highResLoaded || error || !isCurrentImage) return
 
@@ -138,6 +92,35 @@ export const ProgressiveImage = ({
     const imageLoaderManager = new ImageLoaderManager()
     imageLoaderManagerRef.current = imageLoaderManager
 
+    function cleanup() {
+      setHighResLoaded(false)
+      setBlobSrc(null)
+      setError(false)
+      setIsPlayingLivePhoto(false)
+      setLivePhotoVideoLoaded(false)
+
+      setIsConvertingVideo(false)
+      setConversionMethod('')
+      setIsLongPressing(false)
+
+      // Reset loading indicator
+      loadingIndicatorRef.current?.resetLoadingState()
+
+      // Clean up timers
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current)
+        hoverTimerRef.current = null
+      }
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current)
+        longPressTimerRef.current = null
+      }
+
+      // Reset transform when image changes
+      if (transformRef.current) {
+        transformRef.current.resetView()
+      }
+    }
     const loadImage = async () => {
       try {
         const result = await imageLoaderManager.loadImage(src, {
@@ -188,7 +171,7 @@ export const ProgressiveImage = ({
         setError(true)
       }
     }
-
+    cleanup()
     loadImage()
 
     return () => {
@@ -313,6 +296,8 @@ export const ProgressiveImage = ({
     }
   }, [])
 
+  const showContextMenu = useShowContextMenu()
+
   if (error) {
     return (
       <div
@@ -363,6 +348,96 @@ export const ProgressiveImage = ({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onTouchMove={handleTouchMove}
+          onContextMenu={(e) =>
+            showContextMenu(
+              [
+                new MenuItemText({
+                  label: '复制图片',
+                  click: async () => {
+                    const loadingToast = toast.loading('正在复制图片...')
+
+                    try {
+                      // Create a canvas to convert the image to PNG
+                      const img = new Image()
+                      img.crossOrigin = 'anonymous'
+
+                      await new Promise((resolve, reject) => {
+                        img.onload = resolve
+                        img.onerror = reject
+                        img.src = blobSrc
+                      })
+
+                      const canvas = document.createElement('canvas')
+                      const ctx = canvas.getContext('2d')
+                      canvas.width = img.naturalWidth
+                      canvas.height = img.naturalHeight
+
+                      ctx?.drawImage(img, 0, 0)
+
+                      // Convert to PNG blob
+                      await new Promise<void>((resolve, reject) => {
+                        canvas.toBlob(async (pngBlob) => {
+                          try {
+                            if (pngBlob) {
+                              await navigator.clipboard.write([
+                                new ClipboardItem({
+                                  'image/png': pngBlob,
+                                }),
+                              ])
+                              resolve()
+                            } else {
+                              reject(
+                                new Error('Failed to convert image to PNG'),
+                              )
+                            }
+                          } catch (error) {
+                            reject(error)
+                          }
+                        }, 'image/png')
+                      })
+
+                      toast.dismiss(loadingToast)
+                      toast.success('图片已复制到剪贴板')
+                    } catch (error) {
+                      console.error('Failed to copy image:', error)
+
+                      // Fallback: try to copy the original blob
+                      try {
+                        const blob = await fetch(blobSrc).then((res) =>
+                          res.blob(),
+                        )
+                        await navigator.clipboard.write([
+                          new ClipboardItem({
+                            [blob.type]: blob,
+                          }),
+                        ])
+                        toast.dismiss(loadingToast)
+                        toast.success('图片已复制到剪贴板')
+                      } catch (fallbackError) {
+                        console.error(
+                          'Fallback copy also failed:',
+                          fallbackError,
+                        )
+                        toast.dismiss(loadingToast)
+                        toast.error('复制图片失败，请稍后重试')
+                      }
+                    }
+                  },
+                }),
+                MenuItemSeparator.default,
+                new MenuItemText({
+                  label: '下载图片',
+                  click: () => {
+                    const a = document.createElement('a')
+                    a.href = blobSrc
+                    a.download = alt
+                    a.click()
+                  },
+                }),
+              ],
+              e,
+            )
+          }
         />
       )}
 

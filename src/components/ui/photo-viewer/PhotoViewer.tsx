@@ -11,6 +11,8 @@ import type { Swiper as SwiperType } from 'swiper'
 import { Keyboard, Navigation, Virtual } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
 
+import { PassiveFragment } from '~/components/common/PassiveFragmenet'
+import { useMobile } from '~/hooks/useMobile'
 import { Spring } from '~/lib/spring'
 import type { PhotoManifest } from '~/types/photo'
 
@@ -37,20 +39,9 @@ export const PhotoViewer = ({
   const swiperRef = useRef<SwiperType | null>(null)
   const [isImageZoomed, setIsImageZoomed] = useState(false)
   const [showExifPanel, setShowExifPanel] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const isMobile = useMobile()
 
   const currentPhoto = photos[currentIndex]
-
-  // 检测是否为移动设备
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
 
   // 当 PhotoViewer 关闭时重置缩放状态和面板状态
   useEffect(() => {
@@ -229,7 +220,7 @@ export const PhotoViewer = ({
       {/* 交叉溶解的 Blurhash 背景 */}
       <AnimatePresence mode="popLayout">
         {isOpen && (
-          <>
+          <PassiveFragment>
             <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -255,7 +246,7 @@ export const PhotoViewer = ({
                 className="size-fill"
               />
             </m.div>
-          </>
+          </PassiveFragment>
         )}
       </AnimatePresence>
       <AnimatePresence>
@@ -425,7 +416,6 @@ export const PhotoViewer = ({
                 <ExifPanel
                   currentPhoto={currentPhoto}
                   exifData={currentPhoto.exif}
-                  isMobile={isMobile}
                   onClose={isMobile ? () => setShowExifPanel(false) : undefined}
                 />
               )}

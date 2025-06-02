@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { m } from 'motion/react'
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Blurhash } from 'react-blurhash'
 
 import {
@@ -9,13 +9,12 @@ import {
   StreamlineImageAccessoriesLensesPhotosCameraShutterPicturePhotographyPicturesPhotoLens,
   TablerAperture,
 } from '~/icons'
+import { isMobileDevice, isSafari } from '~/lib/device-viewport'
+import { ImageLoaderManager } from '~/lib/image-loader-manager'
 import { getImageFormat } from '~/lib/image-utils'
 import type { PhotoManifest } from '~/types/photo'
 
 import styles from './photo.module.css'
-
-const isSafari =
-  /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
 
 export const PhotoMasonryItem = ({
   data,
@@ -32,7 +31,17 @@ export const PhotoMasonryItem = ({
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
+
+  // Live Photo 相关状态
+  const [isPlayingLivePhoto, setIsPlayingLivePhoto] = useState(false)
+  const [livePhotoVideoLoaded, setLivePhotoVideoLoaded] = useState(false)
+  const [isConvertingVideo, setIsConvertingVideo] = useState(false)
+  const [conversionMethod, setConversionMethod] = useState<string>('')
+
   const imageRef = useRef<HTMLImageElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const imageLoaderManagerRef = useRef<ImageLoaderManager | null>(null)
 
   const handleImageLoad = () => {
     setImageLoaded(true)
@@ -101,6 +110,128 @@ export const PhotoMasonryItem = ({
   // 使用通用的图片格式提取函数
   const imageFormat = getImageFormat(data.originalUrl || data.s3Key || '')
 
+  // Live Photo 视频加载逻辑
+  useEffect(() => {
+    if (
+      !data.isLivePhoto ||
+      !data.livePhotoVideoUrl ||
+      !imageLoaded ||
+      livePhotoVideoLoaded ||
+      isConvertingVideo ||
+      !videoRef.current
+    ) {
+      return
+    }
+
+    const loadLivePhotoVideo = async () => {
+      setIsConvertingVideo(true)
+
+      // 创建新的 image loader manager
+      const imageLoaderManager = new ImageLoaderManager()
+      imageLoaderManagerRef.current = imageLoaderManager
+
+      try {
+        const videoResult = await imageLoaderManager.processLivePhotoVideo(
+          data.livePhotoVideoUrl!,
+          videoRef.current!,
+          {
+            onLoadingStateUpdate: (state) => {
+              // 静默处理加载状态，不显示加载指示器
+              if (state.conversionMessage?.includes('WebCodecs')) {
+                setConversionMethod('webcodecs')
+              } else if (state.conversionMessage?.includes('FFmpeg')) {
+                setConversionMethod('ffmpeg')
+              }
+            },
+          },
+        )
+
+        if (videoResult.conversionMethod) {
+          setConversionMethod(videoResult.conversionMethod)
+        }
+
+        setLivePhotoVideoLoaded(true)
+      } catch (videoError) {
+        console.error('Failed to process Live Photo video:', videoError)
+      } finally {
+        setIsConvertingVideo(false)
+      }
+    }
+
+    loadLivePhotoVideo()
+
+    return () => {
+      if (imageLoaderManagerRef.current) {
+        imageLoaderManagerRef.current.cleanup()
+        imageLoaderManagerRef.current = null
+      }
+    }
+  }, [
+    data.isLivePhoto,
+    data.livePhotoVideoUrl,
+    imageLoaded,
+    livePhotoVideoLoaded,
+    isConvertingVideo,
+  ])
+
+  // Live Photo hover 处理（仅在桌面端）
+  const handleMouseEnter = useCallback(() => {
+    if (
+      isMobileDevice ||
+      !data.isLivePhoto ||
+      !livePhotoVideoLoaded ||
+      isPlayingLivePhoto ||
+      isConvertingVideo
+    ) {
+      return
+    }
+
+    hoverTimerRef.current = setTimeout(() => {
+      setIsPlayingLivePhoto(true)
+      const video = videoRef.current
+      if (video) {
+        video.currentTime = 0
+        video.play()
+      }
+    }, 200) // 200ms hover 延迟
+  }, [
+    data.isLivePhoto,
+    livePhotoVideoLoaded,
+    isPlayingLivePhoto,
+    isConvertingVideo,
+  ])
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = null
+    }
+
+    if (isPlayingLivePhoto) {
+      setIsPlayingLivePhoto(false)
+      const video = videoRef.current
+      if (video) {
+        video.pause()
+        video.currentTime = 0
+      }
+    }
+  }, [isPlayingLivePhoto])
+
+  // 视频播放结束处理
+  const handleVideoEnded = useCallback(() => {
+    setIsPlayingLivePhoto(false)
+  }, [])
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current)
+        hoverTimerRef.current = null
+      }
+    }
+  }, [])
+
   return (
     <m.div
       className="bg-fill-quaternary group relative w-full cursor-pointer overflow-hidden rounded lg:rounded-none"
@@ -109,6 +240,8 @@ export const PhotoMasonryItem = ({
         height: calculatedHeight,
       }}
       onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Blurhash 占位符 */}
       {data.blurhash && (
@@ -137,6 +270,20 @@ export const PhotoMasonryItem = ({
         />
       )}
 
+      {/* Live Photo 视频 */}
+      {data.isLivePhoto && data.livePhotoVideoUrl && (
+        <video
+          ref={videoRef}
+          className={clsx(
+            'absolute inset-0 h-full w-full object-cover duration-300 group-hover:scale-105',
+            isPlayingLivePhoto ? 'z-10' : 'pointer-events-none opacity-0',
+          )}
+          muted
+          playsInline
+          onEnded={handleVideoEnded}
+        />
+      )}
+
       {/* 错误状态 */}
       {imageError && (
         <div className="bg-fill-quaternary text-text-tertiary absolute inset-0 flex items-center justify-center">
@@ -144,6 +291,34 @@ export const PhotoMasonryItem = ({
             <i className="i-mingcute-image-line text-2xl" />
             <p className="mt-2 text-sm">Loaded error</p>
           </div>
+        </div>
+      )}
+
+      {/* Live Photo 标识 */}
+      {data.isLivePhoto && (
+        <div
+          className={clsx(
+            'absolute z-20 flex items-center space-x-1 rounded-xl bg-black/50 px-1 py-1 text-xs text-white transition-all duration-200 hover:bg-black/70',
+            'top-2 left-2',
+          )}
+          title={isMobileDevice ? '长按播放实况照片' : '悬浮播放实况照片'}
+        >
+          {isConvertingVideo ? (
+            <div className="flex items-center gap-1 px-1">
+              <i className="i-mingcute-loading-line animate-spin" />
+              <span>转换中</span>
+            </div>
+          ) : (
+            <>
+              <i className="i-mingcute-live-photo-line size-4" />
+              <span className="mr-1">实况</span>
+              {conversionMethod && (
+                <span className="rounded bg-white/20 px-1 text-xs">
+                  {conversionMethod === 'webcodecs' ? 'WebCodecs' : 'FFmpeg'}
+                </span>
+              )}
+            </>
+          )}
         </div>
       )}
 

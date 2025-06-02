@@ -1,3 +1,4 @@
+import { LRUCache } from '~/lib/lru-cache'
 import {
   convertMovToMp4,
   isVideoConversionSupported,
@@ -31,10 +32,42 @@ export interface VideoProcessResult {
   conversionMethod?: string
 }
 
+export interface ImageCacheResult {
+  blobSrc: string
+  originalSize: number
+  format: string
+}
+
+// Regular image cache using LRU cache
+const regularImageCache: LRUCache<string, ImageCacheResult> = new LRUCache<
+  string,
+  ImageCacheResult
+>(
+  10, // Cache size for regular images
+  (value, key, reason) => {
+    try {
+      URL.revokeObjectURL(value.blobSrc)
+      console.info(`Regular image cache: Revoked blob URL - ${reason}`)
+    } catch (error) {
+      console.warn(
+        `Failed to revoke regular image blob URL (${reason}):`,
+        error,
+      )
+    }
+  },
+)
+
+/**
+ * 生成普通图片的缓存键
+ */
+function generateRegularImageCacheKey(url: string): string {
+  // 使用原始 URL 作为唯一键
+  return url
+}
+
 export class ImageLoaderManager {
   private currentXHR: XMLHttpRequest | null = null
   private delayTimer: NodeJS.Timeout | null = null
-  private convertedUrlRef: string | null = null
 
   async loadImage(
     src: string,
@@ -58,6 +91,7 @@ export class ImageLoaderManager {
             try {
               const result = await this.processImageBlob(
                 xhr.response,
+                src, // 传递原始 URL
                 callbacks,
               )
               resolve(result)
@@ -145,6 +179,7 @@ export class ImageLoaderManager {
 
   private async processImageBlob(
     blob: Blob,
+    originalUrl: string, // 添加原始 URL 参数
     callbacks: LoadingCallbacks,
   ): Promise<ImageLoadResult> {
     const { onError: _onError, onLoadingStateUpdate } = callbacks
@@ -170,12 +205,12 @@ export class ImageLoaderManager {
       if (shouldHeicTransformed) {
         return await this.processHeicImage(blob, callbacks)
       } else {
-        return this.processRegularImage(blob, callbacks)
+        return this.processRegularImage(blob, originalUrl, callbacks) // 传递原始 URL
       }
     } catch (detectionError) {
       console.error('Format detection failed:', detectionError)
       // 如果检测失败，按普通图片处理
-      return this.processRegularImage(blob, callbacks)
+      return this.processRegularImage(blob, originalUrl, callbacks) // 传递原始 URL
     }
   }
 
@@ -195,8 +230,6 @@ export class ImageLoaderManager {
       const { convertHeicImage } = await import('~/lib/heic-converter')
 
       const conversionResult = await convertHeicImage(blob)
-
-      this.convertedUrlRef = conversionResult.url
 
       // Hide loading indicator
       onLoadingStateUpdate?.({
@@ -226,12 +259,43 @@ export class ImageLoaderManager {
 
   private processRegularImage(
     blob: Blob,
+    originalUrl: string, // 添加原始 URL 参数
     callbacks: LoadingCallbacks,
   ): ImageLoadResult {
     const { onLoadingStateUpdate } = callbacks
 
+    // 生成缓存键
+    const cacheKey = generateRegularImageCacheKey(originalUrl) // 使用原始 URL
+
+    // 检查缓存
+    const cachedResult = regularImageCache.get(cacheKey)
+    if (cachedResult) {
+      console.info('Using cached regular image result')
+
+      // Hide loading indicator
+      onLoadingStateUpdate?.({
+        isVisible: false,
+      })
+
+      return {
+        blobSrc: cachedResult.blobSrc,
+      }
+    }
+
     // 普通图片格式
     const url = URL.createObjectURL(blob)
+
+    const result: ImageCacheResult = {
+      blobSrc: url,
+      originalSize: blob.size,
+      format: blob.type,
+    }
+
+    // 缓存结果
+    regularImageCache.set(cacheKey, result)
+    console.info(
+      `Regular image processed and cached: ${(blob.size / 1024).toFixed(1)}KB, URL: ${originalUrl}`,
+    )
 
     // Hide loading indicator
     onLoadingStateUpdate?.({
@@ -344,20 +408,34 @@ export class ImageLoaderManager {
       this.currentXHR.abort()
       this.currentXHR = null
     }
-
-    // 清理转换后的 URL
-    if (this.convertedUrlRef) {
-      // 动态导入 revokeConvertedUrl 函数
-      import('~/lib/heic-converter')
-        .then(({ revokeConvertedUrl }) => {
-          revokeConvertedUrl(this.convertedUrlRef!)
-        })
-        .catch(console.error)
-      this.convertedUrlRef = null
-    }
   }
+}
 
-  getConvertedUrl(): string | null {
-    return this.convertedUrlRef
-  }
+// Regular image cache management functions
+export function getRegularImageCacheSize(): number {
+  return regularImageCache.size()
+}
+
+export function clearRegularImageCache(): void {
+  regularImageCache.clear()
+}
+
+export function removeRegularImageCache(cacheKey: string): boolean {
+  return regularImageCache.delete(cacheKey)
+}
+
+export function getRegularImageCacheStats(): {
+  size: number
+  maxSize: number
+  keys: string[]
+} {
+  return regularImageCache.getStats()
+}
+
+/**
+ * 根据原始 URL 移除特定的普通图片缓存项
+ */
+export function removeRegularImageCacheByUrl(originalUrl: string): boolean {
+  const cacheKey = generateRegularImageCacheKey(originalUrl)
+  return regularImageCache.delete(cacheKey)
 }

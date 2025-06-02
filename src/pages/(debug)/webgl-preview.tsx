@@ -1,14 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 import { Button } from '~/components/ui/button'
 import { WebGLImageViewer } from '~/components/ui/WebGLImageViewer'
+import { useBlobUrl } from '~/lib/blob-url-manager'
 
 export const Component = () => {
   const [file, setFile] = useState<File | null>(null)
-  const blobUrl = useMemo(() => {
-    if (!file) return null
-    return URL.createObjectURL(file)
-  }, [file])
+  const blobUrl = useBlobUrl(file)
+
   return (
     <div className="relative flex h-svh w-full flex-col gap-4">
       <div>

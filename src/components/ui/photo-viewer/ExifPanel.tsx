@@ -6,6 +6,7 @@ import type { FC } from 'react'
 import { Fragment } from 'react'
 
 import { ScrollArea } from '~/components/ui/scroll-areas/ScrollArea'
+import { useMobile } from '~/hooks/useMobile'
 import {
   CarbonIsoOutline,
   MaterialSymbolsExposure,
@@ -21,9 +22,10 @@ import { MotionButtonBase } from '../button'
 export const ExifPanel: FC<{
   currentPhoto: PhotoManifest
   exifData: Exif | null
-  isMobile?: boolean
+
   onClose?: () => void
-}> = ({ currentPhoto, exifData, isMobile = false, onClose }) => {
+}> = ({ currentPhoto, exifData, onClose }) => {
+  const isMobile = useMobile()
   const formattedExifData = formatExifData(exifData)
 
   // 使用通用的图片格式提取函数

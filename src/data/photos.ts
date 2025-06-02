@@ -13,12 +13,6 @@ class PhotoLoader {
 
     this.photos = PhotosManifest as unknown as PhotoManifest[]
 
-    // 为没有标签的照片添加"未分类"标签
-    this.photos = this.photos.map((photo) => ({
-      ...photo,
-      tags: photo.tags && photo.tags.length > 0 ? photo.tags : ['未分类'],
-    }))
-
     this.photos.forEach((photo) => {
       this.photoMap[photo.id] = photo
     })

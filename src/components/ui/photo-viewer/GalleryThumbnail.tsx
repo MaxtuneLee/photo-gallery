@@ -1,7 +1,8 @@
 import { m } from 'motion/react'
 import type { FC } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
+import { useMobile } from '~/hooks/useMobile'
 import { clsxm } from '~/lib/cn'
 import type { PhotoManifest } from '~/types/photo'
 
@@ -12,18 +13,7 @@ export const GalleryThumbnail: FC<{
 }> = ({ currentIndex, photos, onIndexChange }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([])
-  const [isMobile, setIsMobile] = useState(false)
-
-  // 检测是否为移动设备
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+  const isMobile = useMobile()
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current
