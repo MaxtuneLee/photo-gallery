@@ -82,8 +82,7 @@ export async function generateThumbnailAndBlurhash(
     // 生成缩略图
     const thumbnailBuffer = await sharpInstance
       .clone() // 克隆实例用于缩略图生成
-      .resize(600, 600, {
-        fit: 'inside',
+      .resize(600, null, {
         withoutEnlargement: true,
       })
       .webp({

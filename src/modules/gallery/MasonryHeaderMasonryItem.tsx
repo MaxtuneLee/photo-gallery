@@ -1,17 +1,27 @@
 import { siteConfig } from '@config'
 
 import { photoLoader } from '~/data/photos'
+import { clsxm } from '~/lib/cn'
 
 import { ActionGroup } from './ActionGroup'
 
 const numberFormatter = new Intl.NumberFormat('zh-CN')
 const data = photoLoader.getPhotos()
 
-export const MasonryHeaderMasonryItem = ({ width }: { width: number }) => {
+export const MasonryHeaderMasonryItem = ({
+  style,
+  className,
+}: {
+  style?: React.CSSProperties
+  className?: string
+}) => {
   return (
     <div
-      className="overflow-hidden rounded border border-gray-200 bg-white shadow-sm lg:rounded-none dark:border-gray-800 dark:bg-gray-900"
-      style={{ width }}
+      className={clsxm(
+        'overflow-hidden rounded border border-gray-200 bg-white shadow-sm lg:rounded-none dark:border-gray-800 dark:bg-gray-900',
+        className,
+      )}
+      style={style}
     >
       {/* Header section with clean typography */}
       <div className="px-6 pt-8 pb-6 text-center">
