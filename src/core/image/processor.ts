@@ -4,8 +4,8 @@ import * as bmp from '@vingle/bmp-js'
 import heicConvert from 'heic-convert'
 import sharp from 'sharp'
 
+import { HEIC_FORMATS } from '../constants/index.js'
 import type { Logger } from '../logger/index.js'
-import { HEIC_FORMATS } from '../s3/client.js'
 import type { ImageMetadata } from '../types/photo.js'
 
 // 获取图片元数据（复用 Sharp 实例）

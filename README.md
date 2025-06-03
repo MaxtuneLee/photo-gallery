@@ -30,6 +30,65 @@ S3_PREFIX=photos/
 S3_CUSTOM_DOMAIN=your_custom_domain.com
 ```
 
+## Photo Gallery Builder
+
+基于适配器模式重构的照片库构建器，提供灵活的存储抽象和可配置的构建选项。
+
+### 配置文件
+
+在项目根目录的 `builder.config.ts` 中可以配置构建器的各种选项：
+
+```typescript
+export const builderConfig: BuilderConfig = {
+  storage: {
+    provider: 's3',
+    bucket: 'my-bucket',
+    region: 'us-east-1',
+    // ... 其他存储配置
+  },
+  
+  options: {
+    defaultConcurrency: 8,        // 默认并发数
+    maxPhotos: 5000,             // 最大照片数量限制
+    enableLivePhotoDetection: true, // 启用 Live Photo 检测
+    showProgress: true,          // 显示进度
+    showDetailedStats: true,     // 显示详细统计
+  },
+  
+  logging: {
+    verbose: true,               // 详细日志
+    level: 'debug',             // 日志级别
+    outputToFile: false,        // 是否输出到文件
+  },
+  
+  performance: {
+    worker: {
+      maxWorkers: 4,            // 最大 Worker 数量
+      timeout: 30000,           // Worker 超时时间
+    },
+    memoryLimit: 512,           // 内存限制（MB）
+    enableCache: true,          // 启用缓存
+  },
+}
+```
+
+#### 自定义存储提供商
+
+如果需要使用其他存储服务（如阿里云 OSS），可以：
+
+1. 实现新的存储提供商类
+2. 在配置中指定使用新的提供商
+
+```typescript
+const builder = new PhotoGalleryBuilder({
+  storage: {
+    provider: 'oss', // 假设已经实现了 OSS 提供商
+    bucket: 'my-oss-bucket',
+    // ... OSS 特定配置
+  },
+})
+```
+
 ## 🚀 使用
 
 ### 开发模式

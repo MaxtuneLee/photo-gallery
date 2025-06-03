@@ -1,5 +1,9 @@
 // 主要构建器
-export { type BuilderOptions, buildManifest } from './builder/index.js'
+export {
+  type BuilderOptions,
+  defaultBuilder,
+  PhotoGalleryBuilder,
+} from './builder/index.js'
 
 // 日志系统
 export { type Logger, logger, type WorkerLogger } from './logger/index.js'
@@ -14,7 +18,7 @@ export type {
 } from './types/photo.js'
 
 // S3 操作
-export { HEIC_FORMATS, s3Client, SUPPORTED_FORMATS } from './s3/client.js'
+export { s3Client } from './s3/client.js'
 export {
   generateS3Url,
   getImageFromS3,

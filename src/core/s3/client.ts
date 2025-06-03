@@ -22,20 +22,3 @@ function createS3Client(): S3Client {
 }
 
 export const s3Client = createS3Client()
-
-// 支持的图片格式
-export const SUPPORTED_FORMATS = new Set([
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-  '.gif',
-  '.bmp',
-  '.tiff',
-  '.heic',
-  '.heif',
-  '.hif',
-])
-
-// HEIC/HEIF 格式
-export const HEIC_FORMATS = new Set(['.heic', '.heif', '.hif'])

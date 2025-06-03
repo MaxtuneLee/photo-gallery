@@ -31,15 +31,17 @@ export const Component = () => {
           }}
         />
       )}
+
       <ScrollArea
         rootClassName={clsx(
-          'h-screen w-full transition-opacity duration-300',
+          'h-svh w-full transition-opacity duration-300',
           isOpen ? 'pointer-events-none opacity-0 delay-300' : 'opacity-100',
         )}
         viewportClassName="size-full"
       >
         <MasonryRoot />
       </ScrollArea>
+
       <Outlet />
     </>
   )

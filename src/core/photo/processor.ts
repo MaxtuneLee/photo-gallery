@@ -4,6 +4,7 @@ import type { _Object } from '@aws-sdk/client-s3'
 import type { Exif } from 'exif-reader'
 import sharp from 'sharp'
 
+import { HEIC_FORMATS } from '../constants/index.js'
 import { extractExifData } from '../image/exif.js'
 import {
   convertBmpToJpegSharpInstance,
@@ -17,7 +18,6 @@ import {
 } from '../image/thumbnail.js'
 import type { Logger } from '../logger/index.js'
 import { needsUpdate } from '../manifest/manager.js'
-import { HEIC_FORMATS } from '../s3/client.js'
 import { generateS3Url, getImageFromS3 } from '../s3/operations.js'
 import type { PhotoManifestItem, ProcessPhotoResult } from '../types/photo.js'
 import { extractPhotoInfo } from './info-extractor.js'

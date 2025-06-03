@@ -18,7 +18,7 @@ export const MasonryHeaderMasonryItem = ({
   return (
     <div
       className={clsxm(
-        'overflow-hidden rounded border border-gray-200 bg-white shadow-sm lg:rounded-none dark:border-gray-800 dark:bg-gray-900',
+        'overflow-hidden border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900',
         className,
       )}
       style={style}

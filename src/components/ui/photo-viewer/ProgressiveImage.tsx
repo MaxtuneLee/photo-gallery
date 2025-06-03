@@ -77,6 +77,7 @@ export const ProgressiveImage = ({
   const videoRef = useRef<HTMLVideoElement>(null)
   const transformRef = useRef<WebGLImageViewerRef>(null)
   const thumbnailAnimateController = useAnimationControls()
+  const videoAnimateController = useAnimationControls()
   const loadingIndicatorRef = useRef<LoadingIndicatorRef>(null)
   const imageLoaderManagerRef = useRef<ImageLoaderManager | null>(null)
 
@@ -120,6 +121,9 @@ export const ProgressiveImage = ({
       if (transformRef.current) {
         transformRef.current.resetView()
       }
+
+      // Reset video animation
+      videoAnimateController.set({ opacity: 0 })
     }
     const loadImage = async () => {
       try {
@@ -200,36 +204,62 @@ export const ProgressiveImage = ({
     )
       return
 
-    hoverTimerRef.current = setTimeout(() => {
+    hoverTimerRef.current = setTimeout(async () => {
       setIsPlayingLivePhoto(true)
+
+      // 开始淡入动画
+      await videoAnimateController.start({
+        opacity: 1,
+        transition: { duration: 0.15, ease: 'easeOut' },
+      })
+
       const video = videoRef.current
       if (video) {
         video.currentTime = 0
         video.play()
       }
     }, 200) // 200ms hover 延迟
-  }, [isLivePhoto, livePhotoVideoLoaded, isPlayingLivePhoto, isConvertingVideo])
+  }, [
+    isLivePhoto,
+    livePhotoVideoLoaded,
+    isPlayingLivePhoto,
+    isConvertingVideo,
+    videoAnimateController,
+  ])
 
-  const handleBadgeMouseLeave = useCallback(() => {
+  const handleBadgeMouseLeave = useCallback(async () => {
     if (hoverTimerRef.current) {
       clearTimeout(hoverTimerRef.current)
       hoverTimerRef.current = null
     }
 
     if (isPlayingLivePhoto) {
-      setIsPlayingLivePhoto(false)
       const video = videoRef.current
       if (video) {
         video.pause()
         video.currentTime = 0
       }
+
+      // 开始淡出动画
+      await videoAnimateController.start({
+        opacity: 0,
+        transition: { duration: 0.2, ease: 'easeIn' },
+      })
+
+      setIsPlayingLivePhoto(false)
     }
-  }, [isPlayingLivePhoto])
+  }, [isPlayingLivePhoto, videoAnimateController])
 
   // 视频播放结束处理
-  const handleVideoEnded = useCallback(() => {
+  const handleVideoEnded = useCallback(async () => {
+    // 播放结束时淡出
+    await videoAnimateController.start({
+      opacity: 0,
+      transition: { duration: 0.2, ease: 'easeIn' },
+    })
+
     setIsPlayingLivePhoto(false)
-  }, [])
+  }, [videoAnimateController])
 
   const onTransformed = useCallback(
     (originalScale: number, relativeScale: number) => {
@@ -258,9 +288,16 @@ export const ProgressiveImage = ({
       )
         return
 
-      longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = setTimeout(async () => {
         setIsLongPressing(true)
         setIsPlayingLivePhoto(true)
+
+        // 开始淡入动画
+        await videoAnimateController.start({
+          opacity: 1,
+          transition: { duration: 0.15, ease: 'easeOut' },
+        })
+
         const video = videoRef.current
         if (video) {
           video.currentTime = 0
@@ -268,10 +305,16 @@ export const ProgressiveImage = ({
         }
       }, 500) // 500ms 长按延迟
     },
-    [isLivePhoto, livePhotoVideoLoaded, isPlayingLivePhoto, isConvertingVideo],
+    [
+      isLivePhoto,
+      livePhotoVideoLoaded,
+      isPlayingLivePhoto,
+      isConvertingVideo,
+      videoAnimateController,
+    ],
   )
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = useCallback(async () => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current)
       longPressTimerRef.current = null
@@ -279,14 +322,22 @@ export const ProgressiveImage = ({
 
     if (isLongPressing && isPlayingLivePhoto) {
       setIsLongPressing(false)
-      setIsPlayingLivePhoto(false)
+
       const video = videoRef.current
       if (video) {
         video.pause()
         video.currentTime = 0
       }
+
+      // 开始淡出动画
+      await videoAnimateController.start({
+        opacity: 0,
+        transition: { duration: 0.2, ease: 'easeIn' },
+      })
+
+      setIsPlayingLivePhoto(false)
     }
-  }, [isLongPressing, isPlayingLivePhoto])
+  }, [isLongPressing, isPlayingLivePhoto, videoAnimateController])
 
   const handleTouchMove = useCallback(() => {
     // 触摸移动时取消长按
@@ -443,15 +494,14 @@ export const ProgressiveImage = ({
 
       {/* Live Photo 视频 */}
       {isLivePhoto && livePhotoVideoUrl && (
-        <video
+        <m.video
           ref={videoRef}
-          className={clsxm(
-            'absolute inset-0 h-full w-full object-contain duration-200',
-            isPlayingLivePhoto ? 'z-10' : 'opacity-0 pointer-events-none',
-          )}
+          className="absolute inset-0 z-10 h-full w-full object-contain"
           muted
           playsInline
           onEnded={handleVideoEnded}
+          initial={{ opacity: 0 }}
+          animate={videoAnimateController}
         />
       )}
 
