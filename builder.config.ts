@@ -47,11 +47,17 @@ export interface BuilderConfig {
   performance: {
     // Worker 池配置
     worker: {
-      // 最大 Worker 数量
-      maxWorkers: number
-
       // Worker 超时时间（毫秒）
       timeout: number
+
+      // 是否使用 cluster 模式（多进程）而不是线程池
+      useClusterMode: boolean
+
+      // 每个 worker 内部的并发数（cluster 模式下生效）
+      workerConcurrency: number
+
+      // Worker 数量
+      workerCount: number
     }
 
     // 内存使用限制（MB）
@@ -90,8 +96,10 @@ export const defaultBuilderConfig: BuilderConfig = {
 
   performance: {
     worker: {
-      maxWorkers: Math.max(1, Math.floor(os.cpus().length / 2)),
+      workerCount: os.cpus().length * 2,
       timeout: 30000, // 30 seconds
+      useClusterMode: true,
+      workerConcurrency: 2,
     },
     memoryLimit: 512, // 512MB
     enableCache: true,
@@ -112,6 +120,15 @@ export const builderConfig: BuilderConfig = {
   //   ...defaultBuilderConfig.logging,
   //   verbose: true,
   //   level: 'debug',
+  // },
+
+  // 启用多进程集群模式以发挥多核心优势：
+  // performance: {
+  //   ...defaultBuilderConfig.performance,
+  //   worker: {
+  //     ...defaultBuilderConfig.performance.worker,
+  //     useClusterMode: true,
+  //   },
   // },
 
   // 如果要使用 GitHub 存储，取消注释下面的配置：

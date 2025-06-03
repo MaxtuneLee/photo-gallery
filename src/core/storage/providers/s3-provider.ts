@@ -7,7 +7,7 @@ import { SUPPORTED_FORMATS } from '../../constants/index.js'
 import type { Logger } from '../../logger/index.js'
 import { s3Client } from '../../s3/client.js'
 import type {
-  StorageConfig,
+  S3Config,
   StorageObject,
   StorageProvider,
 } from '../interfaces'
@@ -23,9 +23,9 @@ function convertS3ObjectToStorageObject(s3Object: _Object): StorageObject {
 }
 
 export class S3StorageProvider implements StorageProvider {
-  private config: StorageConfig
+  private config: S3Config
 
-  constructor(config: StorageConfig) {
+  constructor(config: S3Config) {
     this.config = config
   }
 

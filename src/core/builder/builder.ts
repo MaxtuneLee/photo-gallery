@@ -10,6 +10,7 @@ import type { PhotoProcessorOptions } from '../photo/processor.js'
 import { processPhoto } from '../photo/processor.js'
 import { StorageManager } from '../storage/index.js'
 import type { PhotoManifestItem, ProcessPhotoResult } from '../types/photo.js'
+import { ClusterPool } from '../worker/cluster-pool.js'
 import { WorkerPool } from '../worker/pool.js'
 
 export interface BuilderOptions {
@@ -113,13 +114,11 @@ export class PhotoGalleryBuilder {
         const concurrency =
           options.concurrencyLimit ?? this.config.options.defaultConcurrency
 
-        // 创建 Worker 池
-        const workerPool = new WorkerPool<ProcessPhotoResult>(
-          {
-            concurrency,
-            totalTasks: imageObjects.length,
-          },
-          logger,
+        // 根据配置选择处理模式
+        const { useClusterMode } = this.config.performance.worker
+
+        logger.main.info(
+          `开始${useClusterMode ? '多进程' : '并发'}处理任务，${useClusterMode ? '进程' : 'Worker'}数：${concurrency}${useClusterMode ? `，每进程并发：${this.config.performance.worker.workerConcurrency}` : ''}`,
         )
 
         const processorOptions: PhotoProcessorOptions = {
@@ -128,9 +127,39 @@ export class PhotoGalleryBuilder {
           isForceThumbnails: options.isForceThumbnails,
         }
 
-        // 执行并发处理
-        const results = await workerPool.execute(
-          async (taskIndex, workerId) => {
+        let results: ProcessPhotoResult[]
+
+        if (useClusterMode) {
+          // 创建 Cluster 池（多进程模式）
+          const clusterPool = new ClusterPool<ProcessPhotoResult>(
+            {
+              concurrency,
+              totalTasks: imageObjects.length,
+              workerConcurrency:
+                this.config.performance.worker.workerConcurrency,
+              workerEnv: {
+                FORCE_MODE: processorOptions.isForceMode.toString(),
+                FORCE_MANIFEST: processorOptions.isForceManifest.toString(),
+                FORCE_THUMBNAILS: processorOptions.isForceThumbnails.toString(),
+              },
+            },
+            logger,
+          )
+
+          // 执行多进程并发处理
+          results = await clusterPool.execute()
+        } else {
+          // 创建传统 Worker 池（主线程并发模式）
+          const workerPool = new WorkerPool<ProcessPhotoResult>(
+            {
+              concurrency,
+              totalTasks: imageObjects.length,
+            },
+            logger,
+          )
+
+          // 执行并发处理
+          results = await workerPool.execute(async (taskIndex, workerId) => {
             const obj = imageObjects[taskIndex]
 
             // 转换 StorageObject 到旧的 _Object 格式以兼容现有的 processPhoto 函数
@@ -162,8 +191,8 @@ export class PhotoGalleryBuilder {
               processorOptions,
               logger,
             )
-          },
-        )
+          })
+        }
 
         // 统计结果并添加到 manifest
         for (const result of results) {
@@ -244,16 +273,30 @@ export class PhotoGalleryBuilder {
   }
 
   private logBuildStart(): void {
-    const endpoint = this.config.storage.endpoint || '默认 AWS S3'
-    const customDomain = this.config.storage.customDomain || '未设置'
-    const { bucket } = this.config.storage
-    const prefix = this.config.storage.prefix || '无前缀'
+    switch (this.config.storage.provider) {
+      case 's3': {
+        const endpoint = this.config.storage.endpoint || '默认 AWS S3'
+        const customDomain = this.config.storage.customDomain || '未设置'
+        const { bucket } = this.config.storage
+        const prefix = this.config.storage.prefix || '无前缀'
 
-    logger.main.info('🚀 开始从存储获取照片列表...')
-    logger.main.info(`🔗 使用端点：${endpoint}`)
-    logger.main.info(`🌐 自定义域名：${customDomain}`)
-    logger.main.info(`🪣 存储桶：${bucket}`)
-    logger.main.info(`📂 前缀：${prefix}`)
+        logger.main.info('🚀 开始从存储获取照片列表...')
+        logger.main.info(`🔗 使用端点：${endpoint}`)
+        logger.main.info(`🌐 自定义域名：${customDomain}`)
+        logger.main.info(`🪣 存储桶：${bucket}`)
+        logger.main.info(`📂 前缀：${prefix}`)
+        break
+      }
+      case 'github': {
+        const { owner, repo, branch, path } = this.config.storage
+        logger.main.info('🚀 开始从存储获取照片列表...')
+        logger.main.info(`👤 仓库所有者：${owner}`)
+        logger.main.info(`🏷️ 仓库名称：${repo}`)
+        logger.main.info(`🌲 分支：${branch}`)
+        logger.main.info(`📂 路径：${path}`)
+        break
+      }
+    }
   }
 
   private logBuildResults(
@@ -294,16 +337,6 @@ export class PhotoGalleryBuilder {
    */
   getConfig(): BuilderConfig {
     return { ...this.config }
-  }
-
-  /**
-   * 更新存储配置
-   */
-  updateStorageConfig(
-    newStorageConfig: Partial<typeof this.config.storage>,
-  ): void {
-    this.config.storage = { ...this.config.storage, ...newStorageConfig }
-    this.storageManager = new StorageManager(this.config.storage)
   }
 }
 

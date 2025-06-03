@@ -63,7 +63,6 @@ export const builderConfig: BuilderConfig = {
   
   performance: {
     worker: {
-      maxWorkers: 4,            // 最大 Worker 数量
       timeout: 30000,           // Worker 超时时间
     },
     memoryLimit: 512,           // 内存限制（MB）

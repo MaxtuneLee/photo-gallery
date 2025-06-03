@@ -17,9 +17,6 @@ export class StorageFactory {
       case 'github': {
         return new GitHubStorageProvider(config)
       }
-      default: {
-        throw new Error(`不支持的存储提供商：${config.provider}`)
-      }
     }
   }
 
