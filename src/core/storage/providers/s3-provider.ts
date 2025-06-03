@@ -6,11 +6,7 @@ import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { SUPPORTED_FORMATS } from '../../constants/index.js'
 import type { Logger } from '../../logger/index.js'
 import { s3Client } from '../../s3/client.js'
-import type {
-  S3Config,
-  StorageObject,
-  StorageProvider,
-} from '../interfaces'
+import type { S3Config, StorageObject, StorageProvider } from '../interfaces'
 
 // 将 AWS S3 对象转换为通用存储对象
 function convertS3ObjectToStorageObject(s3Object: _Object): StorageObject {
@@ -123,7 +119,7 @@ export class S3StorageProvider implements StorageProvider {
     // 如果设置了自定义域名，直接使用自定义域名
     if (this.config.customDomain) {
       const customDomain = this.config.customDomain.replace(/\/$/, '') // 移除末尾的斜杠
-      return `${customDomain}/${this.config.bucket}/${key}`
+      return `${customDomain}/${key}`
     }
 
     // 如果使用自定义端点，构建相应的 URL
@@ -141,7 +137,7 @@ export class S3StorageProvider implements StorageProvider {
 
     // 对于自定义端点（如 MinIO 等）
     const baseUrl = endpoint.replace(/\/$/, '') // 移除末尾的斜杠
-    return `${baseUrl}/${this.config.bucket}/${key}`
+    return `${baseUrl}/${key}`
   }
 
   detectLivePhotos(allObjects: StorageObject[]): Map<string, StorageObject> {
