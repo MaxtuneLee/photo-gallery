@@ -18,6 +18,7 @@ import { getImageFormat } from '~/lib/image-utils'
 import type { PhotoManifest } from '~/types/photo'
 
 import { MotionButtonBase } from '../button'
+import { EllipsisHorizontalTextWithTooltip } from '../typography'
 
 export const ExifPanel: FC<{
   currentPhoto: PhotoManifest
@@ -78,7 +79,7 @@ export const ExifPanel: FC<{
           <div>
             <h4 className="mb-2 text-sm font-medium text-white/80">基本信息</h4>
             <div className="space-y-1 text-sm">
-              <Row label="文件名" value={currentPhoto.title} />
+              <Row label="文件名" value={currentPhoto.title} ellipsis />
               <Row label="格式" value={imageFormat} />
               <Row
                 label="尺寸"
@@ -873,13 +874,25 @@ const convertDMSToDD = (dms: number[], ref: string): number | null => {
 const Row: FC<{
   label: string
   value: string | number | null | undefined | number[]
-}> = ({ label, value }) => {
+  ellipsis?: boolean
+}> = ({ label, value, ellipsis }) => {
   return (
     <div className="flex justify-between gap-4">
       <span className="text-text-secondary shrink-0">{label}</span>
-      <span className="text-text text-right">
-        {Array.isArray(value) ? value.join(' ') : value}
-      </span>
+
+      {ellipsis ? (
+        <span className="relative min-w-0 flex-1 shrink">
+          <span className="absolute inset-0">
+            <EllipsisHorizontalTextWithTooltip className="text-text min-w-0 text-right">
+              {Array.isArray(value) ? value.join(' ') : value}
+            </EllipsisHorizontalTextWithTooltip>
+          </span>
+        </span>
+      ) : (
+        <span className="text-text min-w-0 text-right">
+          {Array.isArray(value) ? value.join(' ') : value}
+        </span>
+      )}
     </div>
   )
 }

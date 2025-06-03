@@ -1,26 +1,19 @@
-import { siteConfig } from '@config'
-import { useAtom, useAtomValue } from 'jotai'
-import { m } from 'motion/react'
-import { useCallback, useMemo, useRef } from 'react'
+import { useAtomValue } from 'jotai'
+import { AnimatePresence, m } from 'motion/react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { gallerySettingAtom } from '~/atoms/app'
-import { Button } from '~/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '~/components/ui/dropdown-menu'
-import { photoLoader } from '~/data/photos'
+import { RootPortal } from '~/components/ui/portal'
+import { useScrollViewElement } from '~/components/ui/scroll-areas/hooks'
 import { usePhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
 import { useTypeScriptHappyCallback } from '~/hooks/useTypeScriptCallback'
+import { Spring } from '~/lib/spring'
 import type { PhotoManifest } from '~/types/photo'
 
+import { ActionGroup } from './ActionGroup'
 import { Masonry } from './Masonic'
+import { MasonryHeaderMasonryItem } from './MasonryHeaderMasonryItem'
 import { PhotoMasonryItem } from './PhotoMasonryItem'
-
-const data = photoLoader.getPhotos()
 
 class MasonryHeaderItem {
   static default = new MasonryHeaderItem()
@@ -40,6 +33,7 @@ export const MasonryRoot = () => {
 
   return (
     <div className="p-1 lg:p-0">
+      <FloatingActionBar />
       <Masonry<MasonryItemType>
         key={`${sortOrder}-${selectedTags.join(',')}`}
         items={useMemo(() => [MasonryHeaderItem.default, ...photos], [photos])}
@@ -159,183 +153,42 @@ export const MasonryItem = ({
   }
 }
 
-const numberFormatter = new Intl.NumberFormat('zh-CN')
-const allTags = photoLoader.getAllTags()
-const MasonryHeaderMasonryItem = ({ width }: { width: number }) => {
-  const [gallerySetting, setGallerySetting] = useAtom(gallerySettingAtom)
+const FloatingActionBar = () => {
+  const [showFloatingActions, setShowFloatingActions] = useState(false)
+  const scrollElement = useScrollViewElement()
 
-  const setSortOrder = (order: 'asc' | 'desc') => {
-    setGallerySetting({
-      ...gallerySetting,
-      sortOrder: order,
-    })
-  }
+  useEffect(() => {
+    if (!scrollElement) return
 
-  const toggleTag = (tag: string) => {
-    const newSelectedTags = gallerySetting.selectedTags.includes(tag)
-      ? gallerySetting.selectedTags.filter((t) => t !== tag)
-      : [...gallerySetting.selectedTags, tag]
+    const handleScroll = () => {
+      const { scrollTop } = scrollElement
 
-    setGallerySetting({
-      ...gallerySetting,
-      selectedTags: newSelectedTags,
-    })
-  }
+      setShowFloatingActions(scrollTop > 500)
+    }
 
-  const clearAllTags = () => {
-    setGallerySetting({
-      ...gallerySetting,
-      selectedTags: [],
-    })
-  }
+    scrollElement.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      scrollElement.removeEventListener('scroll', handleScroll)
+    }
+  }, [scrollElement])
 
   return (
-    <div
-      className="overflow-hidden rounded border border-gray-200 bg-white shadow-sm lg:rounded-none dark:border-gray-800 dark:bg-gray-900"
-      style={{ width }}
-    >
-      {/* Header section with clean typography */}
-      <div className="px-6 pt-8 pb-6 text-center">
-        <div className="from-accent to-accent/80 mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg">
-          <i className="i-mingcute-camera-2-line text-2xl text-white" />
-        </div>
-
-        <h2 className="mb-1 text-2xl font-semibold text-gray-900 dark:text-white">
-          {siteConfig.name}
-        </h2>
-
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-          {numberFormatter.format(data?.length || 0)} 张照片
-        </p>
-      </div>
-
-      {/* Controls section */}
-      <div className="px-6 pb-6">
-        <div className="flex items-center justify-center gap-3">
-          {siteConfig.extra.accessRepo && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10 w-10 rounded-full border-0 bg-gray-100 transition-all duration-200 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-              onClick={() =>
-                window.open(
-                  'https://github.com/Maxtune/photo-gallery',
-                  '_blank',
-                )
-              }
-              title="查看 GitHub 仓库"
-            >
-              <i className="i-mingcute-github-line text-base text-gray-600 dark:text-gray-300" />
-            </Button>
-          )}
-
-          {/* 标签筛选按钮 */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="relative h-10 w-10 rounded-full border-0 bg-gray-100 transition-all duration-200 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-                title="标签筛选"
-              >
-                <i className="i-mingcute-tag-line text-base text-gray-600 dark:text-gray-300" />
-                {gallerySetting.selectedTags.length > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs font-medium text-white shadow-sm">
-                    {gallerySetting.selectedTags.length}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="center" className="w-64">
-              <DropdownMenuLabel className="relative">
-                <span>标签筛选</span>
-                {gallerySetting.selectedTags.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    onClick={clearAllTags}
-                    className="absolute top-0 right-0 h-6 rounded-md px-2 text-xs"
-                  >
-                    清除
-                  </Button>
-                )}
-              </DropdownMenuLabel>
-
-              {allTags.length === 0 ? (
-                <div className="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                  暂无标签
-                </div>
-              ) : (
-                <div className="max-h-64 overflow-y-auto">
-                  {allTags.map((tag) => (
-                    <DropdownMenuCheckboxItem
-                      key={tag}
-                      checked={gallerySetting.selectedTags.includes(tag)}
-                      onCheckedChange={() => toggleTag(tag)}
-                    >
-                      {tag}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* 排序按钮 */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-10 w-10 rounded-full border-0 bg-gray-100 transition-all duration-200 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-                title="排序方式"
-              >
-                {gallerySetting.sortOrder === 'desc' ? (
-                  <i className="i-mingcute-sort-descending-line text-base text-gray-600 dark:text-gray-300" />
-                ) : (
-                  <i className="i-mingcute-sort-ascending-line text-base text-gray-600 dark:text-gray-300" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="center" className="w-48">
-              <DropdownMenuLabel>排序方式</DropdownMenuLabel>
-
-              <DropdownMenuCheckboxItem
-                onClick={() => setSortOrder('desc')}
-                icon={<i className="i-mingcute-sort-descending-line" />}
-                checked={gallerySetting.sortOrder === 'desc'}
-              >
-                <span>最新优先</span>
-              </DropdownMenuCheckboxItem>
-
-              <DropdownMenuCheckboxItem
-                onClick={() => setSortOrder('asc')}
-                icon={<i className="i-mingcute-sort-ascending-line" />}
-                checked={gallerySetting.sortOrder === 'asc'}
-              >
-                <span>最早优先</span>
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      {/* Footer with build date */}
-      <div className="border-t border-gray-100 bg-gray-50 px-6 py-4 dark:border-gray-800 dark:bg-gray-800/50">
-        <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-          <i className="i-mingcute-calendar-line text-sm" />
-          <span>
-            构建于{' '}
-            {new Date(BUILT_DATE).toLocaleDateString('zh-CN', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </span>
-        </div>
-      </div>
-    </div>
+    <AnimatePresence>
+      <RootPortal>
+        {showFloatingActions && (
+          <m.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={Spring.presets.snappy}
+            className="fixed top-4 left-4 z-50"
+          >
+            <div className="border-material-opaque rounded-xl border bg-black/60 p-3 shadow-2xl backdrop-blur-[70px]">
+              <ActionGroup />
+            </div>
+          </m.div>
+        )}
+      </RootPortal>
+    </AnimatePresence>
   )
 }

@@ -1,0 +1,72 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# UIKit Colors for Tailwind CSS
+
+You should use @https://github.com/Innei/apple-uikit-colors/blob/main/packages/uikit-colors/macos.ts TailwindCSS atom classname.
+
+## System Colors
+red: bg-red text-red border-red
+orange: bg-orange text-orange border-orange
+yellow: bg-yellow text-yellow border-yellow
+green: bg-green text-green border-green
+mint: bg-mint text-mint border-mint
+teal: bg-teal text-teal border-teal
+cyan: bg-cyan text-cyan border-cyan
+blue: bg-blue text-blue border-blue
+indigo: bg-indigo text-indigo border-indigo
+purple: bg-purple text-purple border-purple
+pink: bg-pink text-pink border-pink
+brown: bg-brown text-brown border-brown
+gray: bg-gray text-gray border-gray
+
+## Fill Colors
+fill: bg-fill
+fill-secondary: bg-fill-secondary
+fill-tertiary: bg-fill-tertiary
+fill-quaternary: bg-fill-quaternary
+fill-quinary: bg-fill-quinary
+fill-vibrant: bg-fill-vibrant
+fill-vibrant-secondary: bg-fill-vibrant-secondary
+fill-vibrant-tertiary: bg-fill-vibrant-tertiary
+fill-vibrant-quaternary: bg-fill-vibrant-quaternary
+fill-vibrant-quinary: bg-fill-vibrant-quinary
+
+## Text Colors
+text: text-text
+text-secondary: text-text-secondary
+text-tertiary: text-text-tertiary
+text-quaternary: text-text-quaternary
+text-quinary: text-text-quinary
+text-vibrant: text-text-vibrant
+text-vibrant-secondary: text-text-vibrant-secondary
+text-vibrant-tertiary: text-text-vibrant-tertiary
+text-vibrant-quaternary: text-text-vibrant-quaternary
+text-vibrant-quinary: text-text-vibrant-quinary
+
+## Material Colors
+material-ultra-thick: bg-material-ultra-thick
+material-thick: bg-material-thick
+material-medium: bg-material-medium
+material-thin: bg-material-thin
+material-ultra-thin: bg-material-ultra-thin
+material-opaque: bg-material-opaque
+
+## Control Colors
+control-enabled: bg-control-enabled
+control-disabled: bg-control-disabled
+
+## Interface Colors
+menu: bg-menu
+popover: bg-popover
+titlebar: bg-titlebar
+sidebar: bg-sidebar
+selection-focused: bg-selection-focused
+selection-focused-fill: bg-selection-focused-fill
+selection-unfocused: bg-selection-unfocused
+selection-unfocused-fill: bg-selection-unfocused-fill
+header-view: bg-header-view
+tooltip: bg-tooltip
+under-window-background: bg-under-window-background
