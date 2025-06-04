@@ -1,7 +1,7 @@
 import os from 'node:os'
 
+import type { StorageConfig } from './apps/web/src/core/storage/interfaces.js'
 import { env } from './env.js'
-import type { StorageConfig } from './src/core/storage/interfaces.js'
 
 export interface BuilderConfig {
   // 存储配置

@@ -1,7 +1,3 @@
-onlyBuiltDependencies:
-  - '@biomejs/biome'
-  - '@tailwindcss/oxide'
-  - esbuild
-  - sharp
-  - simple-git-hooks
-  - unrs-resolver
+packages:
+  - 'apps/*'
+  - 'packages/*'

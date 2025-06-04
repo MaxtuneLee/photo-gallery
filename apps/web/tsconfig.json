@@ -20,5 +20,25 @@
     "noImplicitAny": false,
     "noEmit": true,
     "jsx": "preserve",
-  }
+    "paths": {
+      "~/*": [
+        "./src/*"
+      ],
+      "@pkg": [
+        "./package.json"
+      ],
+      "@config": [
+        "../../config/site.config.ts"
+      ],
+      "@builder": [
+        "../../builder.config.ts"
+      ],
+      "@env": [
+        "../../env.ts"
+      ]
+    },
+  },
+  "include": [
+    "./src/**/*",
+  ]
 }

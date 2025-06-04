@@ -9,6 +9,7 @@ export default defineConfig(
     react: true,
     tailwindCSS: true,
   },
+
   {
     settings: {
       tailwindcss: {
