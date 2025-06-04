@@ -12,3 +12,5 @@ thomas-x2d-xcd-25v-1.webp
 public/thumbnails
 src/data/photos-manifest.json
 .env
+apps/web/public/thumbnails
+apps/web/src/data/photos-manifest.json

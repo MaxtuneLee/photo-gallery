@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@innei/prettier": "0.15.0",
+    "@types/node": "^20.17.57",
     "eslint": "9.28.0",
     "eslint-config-hyoban": "4.0.7",
     "lint-staged": "16.1.0",
