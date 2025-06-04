@@ -10,6 +10,7 @@ import type { PhotoManifest } from '~/types/photo'
 interface SharePanelProps {
   photo: PhotoManifest
   trigger: React.ReactNode
+  blobSrc?: string
 }
 
 interface ShareOption {
@@ -66,7 +67,7 @@ const socialOptions: SocialShareOption[] = [
   },
 ]
 
-export const SharePanel = ({ photo, trigger }: SharePanelProps) => {
+export const SharePanel = ({ photo, trigger, blobSrc }: SharePanelProps) => {
   const [isOpen, setIsOpen] = useState(false)
 
   const handleNativeShare = useCallback(async () => {
@@ -75,8 +76,9 @@ export const SharePanel = ({ photo, trigger }: SharePanelProps) => {
     const shareText = `查看这张精美的照片：${shareTitle}`
 
     try {
-      // 尝试获取图片文件并分享
-      const response = await fetch(photo.originalUrl)
+      // 优先使用 blobSrc（转换后的图片），如果没有则使用 originalUrl
+      const imageUrl = blobSrc || photo.originalUrl
+      const response = await fetch(imageUrl)
       const blob = await response.blob()
       const file = new File([blob], `${photo.title || 'photo'}.jpg`, {
         type: blob.type || 'image/jpeg',
@@ -105,7 +107,7 @@ export const SharePanel = ({ photo, trigger }: SharePanelProps) => {
       toast.success('链接已复制到剪贴板')
       setIsOpen(false)
     }
-  }, [photo.title, photo.originalUrl])
+  }, [photo.title, blobSrc, photo.originalUrl])
 
   const handleCopyLink = useCallback(async () => {
     try {

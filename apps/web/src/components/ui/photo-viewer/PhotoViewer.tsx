@@ -39,6 +39,7 @@ export const PhotoViewer = ({
   const swiperRef = useRef<SwiperType | null>(null)
   const [isImageZoomed, setIsImageZoomed] = useState(false)
   const [showExifPanel, setShowExifPanel] = useState(false)
+  const [currentBlobSrc, setCurrentBlobSrc] = useState<string | null>(null)
   const isMobile = useMobile()
 
   const currentPhoto = photos[currentIndex]
@@ -48,6 +49,7 @@ export const PhotoViewer = ({
     if (!isOpen) {
       setIsImageZoomed(false)
       setShowExifPanel(false)
+      setCurrentBlobSrc(null)
     }
   }, [isOpen])
 
@@ -136,6 +138,11 @@ export const PhotoViewer = ({
   // 处理图片缩放状态变化
   const handleZoomChange = useCallback((isZoomed: boolean) => {
     setIsImageZoomed(isZoomed)
+  }, [])
+
+  // 处理 blobSrc 变化
+  const handleBlobSrcChange = useCallback((blobSrc: string | null) => {
+    setCurrentBlobSrc(blobSrc)
   }, [])
 
   // 键盘导航
@@ -246,6 +253,7 @@ export const PhotoViewer = ({
                       {/* 分享按钮 */}
                       <SharePanel
                         photo={currentPhoto}
+                        blobSrc={currentBlobSrc || undefined}
                         trigger={
                           <button
                             type="button"
@@ -329,6 +337,9 @@ export const PhotoViewer = ({
                               enableZoom={true}
                               onZoomChange={
                                 isCurrentImage ? handleZoomChange : undefined
+                              }
+                              onBlobSrcChange={
+                                isCurrentImage ? handleBlobSrcChange : undefined
                               }
                               // Live Photo props
                               isLivePhoto={photo.isLivePhoto}
