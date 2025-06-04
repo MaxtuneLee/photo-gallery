@@ -29,6 +29,7 @@ interface ProgressiveImageProps {
   onError?: () => void
   onProgress?: (progress: number) => void
   onZoomChange?: (isZoomed: boolean) => void
+  onBlobSrcChange?: (blobSrc: string | null) => void
 
   enableZoom?: boolean
   enablePan?: boolean
@@ -52,6 +53,7 @@ export const ProgressiveImage = ({
   onError,
   onProgress,
   onZoomChange,
+  onBlobSrcChange,
 
   maxZoom = 20,
   minZoom = 1,
@@ -82,6 +84,7 @@ export const ProgressiveImage = ({
       setHighResLoaded(false)
       setBlobSrc(null)
       setError(false)
+      onBlobSrcChange?.(null)
 
       // Reset loading indicator
       loadingIndicatorRef.current?.resetLoadingState()
@@ -103,6 +106,7 @@ export const ProgressiveImage = ({
         })
 
         setBlobSrc(result.blobSrc)
+        onBlobSrcChange?.(result.blobSrc)
         setHighResLoaded(true)
       } catch (loadError) {
         console.error('Failed to load image:', loadError)
@@ -116,7 +120,15 @@ export const ProgressiveImage = ({
     return () => {
       imageLoaderManager.cleanup()
     }
-  }, [highResLoaded, error, onProgress, src, onError, isCurrentImage])
+  }, [
+    highResLoaded,
+    error,
+    onProgress,
+    src,
+    onError,
+    isCurrentImage,
+    onBlobSrcChange,
+  ])
 
   const onTransformed = useCallback(
     (originalScale: number, relativeScale: number) => {

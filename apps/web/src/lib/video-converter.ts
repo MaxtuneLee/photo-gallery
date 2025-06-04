@@ -424,6 +424,7 @@ export async function convertMovToMp4(
         progress: 100,
         message: '使用缓存结果',
       })
+      console.info(`Cached video conversion result:`, cachedResult)
       return cachedResult
     }
   } else {
@@ -449,27 +450,24 @@ export async function convertMovToMp4(
       preferMp4,
     )
 
-    // Cache the result if successful
+    // Cache the result
+    videoCache.set(videoUrl, result)
+
     if (result.success) {
-      videoCache.set(videoUrl, result)
       console.info('WebCodecs conversion completed successfully and cached')
     } else {
-      console.warn(
-        'WebCodecs conversion failed, falling back to FFmpeg:',
-        result.error,
-      )
+      console.error('WebCodecs conversion failed:', result.error)
     }
 
     return result
   }
 
+  console.info('WebCodecs not supported, falling back to FFmpeg...')
+
   const fallbackResult = {
     success: false,
-    error: '浏览器不支持 webcodecs，Live Photo 转换失败',
+    error: 'WebCodecs not supported in this browser',
   }
-
-  // Cache failed result to avoid repeated attempts
-  videoCache.set(videoUrl, fallbackResult)
 
   return fallbackResult
 }

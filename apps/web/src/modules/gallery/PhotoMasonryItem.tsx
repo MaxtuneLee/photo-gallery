@@ -34,6 +34,8 @@ export const PhotoMasonryItem = ({
   const [isPlayingLivePhoto, setIsPlayingLivePhoto] = useState(false)
   const [livePhotoVideoLoaded, setLivePhotoVideoLoaded] = useState(false)
   const [isConvertingVideo, setIsConvertingVideo] = useState(false)
+  const [videoConvertionError, setVideoConversionError] =
+    useState<unknown>(null)
   const [conversionMethod, setConversionMethod] = useState<string>('')
 
   const imageRef = useRef<HTMLImageElement>(null)
@@ -151,6 +153,7 @@ export const PhotoMasonryItem = ({
         setLivePhotoVideoLoaded(true)
       } catch (videoError) {
         console.error('Failed to process Live Photo video:', videoError)
+        setVideoConversionError(videoError)
       } finally {
         setIsConvertingVideo(false)
       }
@@ -164,12 +167,12 @@ export const PhotoMasonryItem = ({
         imageLoaderManagerRef.current = null
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     data.isLivePhoto,
     data.livePhotoVideoUrl,
     imageLoaded,
     livePhotoVideoLoaded,
-    isConvertingVideo,
   ])
 
   // Live Photo hover 处理（仅在桌面端）
@@ -310,8 +313,24 @@ export const PhotoMasonryItem = ({
               <i className="i-mingcute-live-photo-line size-4" />
               <span className="mr-1">实况</span>
               {conversionMethod && (
-                <span className="rounded bg-white/20 px-1 text-xs">
-                  {conversionMethod === 'webcodecs' ? 'WebCodecs' : 'FFmpeg'}
+                <span
+                  className={clsx(
+                    'ml-0.5 rounded px-1 text-xs',
+                    videoConvertionError ? 'bg-warning/20' : 'bg-white/20',
+                  )}
+                >
+                  {videoConvertionError ? (
+                    <div
+                      className="w-3 text-center font-bold text-yellow-400"
+                      title={(videoConvertionError as Error).message}
+                    >
+                      !
+                    </div>
+                  ) : conversionMethod === 'webcodecs' ? (
+                    'WebCodecs'
+                  ) : (
+                    'FFmpeg'
+                  )}
                 </span>
               )}
             </>
