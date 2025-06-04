@@ -1,8 +1,8 @@
 FROM node:lts AS build
 WORKDIR /app
-COPY package*.json ./
+COPY ./ ./
 RUN corepack enable
-RUN pnpm install
+RUN pnpm i --dangerously-allow-all-builds
 COPY . .
 RUN pnpm build:manifest
 RUN pnpm build
