@@ -6,7 +6,6 @@ import 'swiper/css/navigation'
 import { AnimatePresence, m } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Blurhash } from 'react-blurhash'
-import { toast } from 'sonner'
 import type { Swiper as SwiperType } from 'swiper'
 import { Keyboard, Navigation, Virtual } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -19,6 +18,7 @@ import type { PhotoManifest } from '~/types/photo'
 import { ExifPanel } from './ExifPanel'
 import { GalleryThumbnail } from './GalleryThumbnail'
 import { ProgressiveImage } from './ProgressiveImage'
+import { SharePanel } from './SharePanel'
 
 interface PhotoViewerProps {
   photos: PhotoManifest[]
@@ -138,48 +138,6 @@ export const PhotoViewer = ({
     setIsImageZoomed(isZoomed)
   }, [])
 
-  // 处理分享功能
-  const handleShare = useCallback(async () => {
-    const shareUrl = window.location.href
-    const shareTitle = currentPhoto.title || '照片分享'
-    const shareText = `查看这张精美的照片：${shareTitle}`
-
-    // 检查是否支持 Web Share API
-    if (navigator.share) {
-      try {
-        // 尝试获取图片文件并分享
-        const response = await fetch(currentPhoto.originalUrl)
-        const blob = await response.blob()
-        const file = new File([blob], `${currentPhoto.title || 'photo'}.jpg`, {
-          type: blob.type || 'image/jpeg',
-        })
-
-        // 检查是否支持文件分享
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: shareTitle,
-            text: shareText,
-            url: shareUrl,
-            files: [file],
-          })
-        } else {
-          // 不支持文件分享，只分享链接
-          await navigator.share({
-            title: shareTitle,
-            text: shareText,
-            url: shareUrl,
-          })
-        }
-      } catch {
-        await navigator.clipboard.writeText(shareUrl)
-        toast.success('链接已复制')
-      }
-    } else {
-      await navigator.clipboard.writeText(shareUrl)
-      toast.success('链接已复制')
-    }
-  }, [currentPhoto.title, currentPhoto.originalUrl])
-
   // 键盘导航
   useEffect(() => {
     if (!isOpen) return
@@ -286,14 +244,18 @@ export const PhotoViewer = ({
                     {/* 右侧按钮组 */}
                     <div className="flex items-center gap-2">
                       {/* 分享按钮 */}
-                      <button
-                        type="button"
-                        className="bg-material-ultra-thick pointer-events-auto flex size-8 items-center justify-center rounded-full text-white backdrop-blur-2xl duration-200 hover:bg-black/40"
-                        onClick={handleShare}
-                        title="分享链接"
-                      >
-                        <i className="i-mingcute-share-2-line" />
-                      </button>
+                      <SharePanel
+                        photo={currentPhoto}
+                        trigger={
+                          <button
+                            type="button"
+                            className="bg-material-ultra-thick pointer-events-auto flex size-8 items-center justify-center rounded-full text-white backdrop-blur-2xl duration-200 hover:bg-black/40"
+                            title="分享照片"
+                          >
+                            <i className="i-mingcute-share-2-line" />
+                          </button>
+                        }
+                      />
 
                       {/* 关闭按钮 */}
                       <button

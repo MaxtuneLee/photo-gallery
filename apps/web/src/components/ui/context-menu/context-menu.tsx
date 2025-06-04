@@ -57,7 +57,7 @@ const ContextMenuSubContent = ({
         'min-w-32 overflow-hidden',
         'rounded-[6px] border p-1',
         'shadow-context-menu',
-        'z-[61]',
+        'z-[10061]',
         className,
       )}
       {...props}
@@ -77,7 +77,7 @@ const ContextMenuContent = ({
     <ContextMenuPrimitive.Content
       ref={ref}
       className={clsxm(
-        'bg-material-medium backdrop-blur-[70px] text-text shadow-context-menu z-[60] min-w-32 overflow-hidden rounded-[6px] border border-border p-1',
+        'bg-material-medium backdrop-blur-[70px] text-text shadow-context-menu z-[10060] min-w-32 overflow-hidden rounded-[6px] border border-border p-1',
         'motion-scale-in-75 motion-duration-150 text-body lg:animate-none',
         className,
       )}
