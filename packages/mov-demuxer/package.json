@@ -1,0 +1,32 @@
+{
+  "name": "@photo-gallery/mov-demuxer",
+  "type": "module",
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.11.1",
+  "description": "MOV/MP4 demuxer with WebCodecs API integration, inspired by FFmpeg",
+  "author": "Maxtune",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch"
+  },
+  "devDependencies": {
+    "nbump": "2.1.2",
+    "tsdown": "0.12.6",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  }
+}
